@@ -1,4 +1,6 @@
-import { defineCommand, runMain } from "citty";
+import { defineCommand, runCommand } from "citty";
+import { fileURLToPath } from "node:url";
+import { realpathSync } from "node:fs";
 import { createCommand } from "./commands/create.js";
 import { rmCommand } from "./commands/rm.js";
 import { lsCommand } from "./commands/ls.js";
@@ -26,29 +28,38 @@ async function dispatch(): Promise<void> {
   }
 
   if (firstArg !== undefined && KNOWN_SUBCOMMANDS.has(firstArg)) {
-    // Route to a dedicated main that only has subCommands defined.
-    const subMain = defineCommand({
+    // Route to a dedicated command that only has subCommands defined.
+    const subCmd = defineCommand({
       meta: { name: "wtmux", version, description: "Coordinated git worktrees across sibling repos" },
       subCommands: { rm: rmCommand, ls: lsCommand },
     });
-    await runMain(subMain, { rawArgs });
+    await runCommand(subCmd, { rawArgs });
   } else {
-    // Route to the create main that has positional args but no subCommands.
-    const createMain = defineCommand({
+    // Route to the create command that has positional args but no subCommands.
+    const createCmd = defineCommand({
       meta: { name: "wtmux", version, description: "Coordinated git worktrees across sibling repos" },
       args: createCommand.args,
       async run(ctx) {
         await createCommand.run!(ctx);
       },
     });
-    await runMain(createMain, { rawArgs });
+    await runCommand(createCmd, { rawArgs });
   }
 }
 
 // Only run dispatch when this module is the process entry point, not when
-// imported by tests. In ESM, import.meta.url matches the running file path.
+// imported by tests. Resolve symlinks so global installs (pnpm add -g, npm link)
+// work correctly.
 /* c8 ignore next */
-if (import.meta.url === `file://${process.argv[1]}`) {
+const selfPath = fileURLToPath(import.meta.url);
+let entryPath = process.argv[1] ?? "";
+try {
+  entryPath = realpathSync(entryPath);
+} catch {
+  // leave as-is; comparison below will fail cleanly
+}
+/* c8 ignore next */
+if (entryPath === selfPath) {
   dispatch().catch((err) => {
     const message = err instanceof Error ? err.message : String(err);
     process.stderr.write(`[wtmux] ${message}\n`);

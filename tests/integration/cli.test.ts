@@ -83,4 +83,15 @@ describe("cli", () => {
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr).toMatch(/not inside any git repository/i);
   });
+
+  it("exits 2 with [wtmux] prefix on precondition failure", async () => {
+    const bare = await tmp();
+    const result = await execa("node", [BIN, "feat/x", "--no-launch"], {
+      cwd: bare,
+      reject: false,
+    });
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toMatch(/\[wtmux\]/);
+    expect(result.stderr).toMatch(/not inside any git repository/i);
+  });
 });
