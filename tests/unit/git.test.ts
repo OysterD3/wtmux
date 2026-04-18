@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  branchIsMergedInto,
   checkRefFormat,
   getCurrentBranch,
   getToplevel,
@@ -11,6 +12,7 @@ import {
   stashList,
   statusPorcelain,
   unpushedCommits,
+  worktreeAdd,
 } from "../../src/git.js";
 import { initRepo, makeTmpDir } from "../helpers/fixtures.js";
 
@@ -111,5 +113,23 @@ describe("git helpers", () => {
     const repo = await tmp();
     await initRepo(repo);
     expect(await unpushedCommits(repo)).toEqual([]);
+  });
+
+  it("worktreeAdd creates a new worktree with a new branch", async () => {
+    const repo = await tmp();
+    await initRepo(repo);
+    const wt = path.join(await tmp(), "wt-new");
+    await worktreeAdd(repo, { path: wt, branch: "feat/new", base: "main", createBranch: true });
+    expect((await fs.stat(wt)).isDirectory()).toBe(true);
+    const branch = (await execa("git", ["-C", wt, "symbolic-ref", "--short", "HEAD"])).stdout.trim();
+    expect(branch).toBe("feat/new");
+  });
+
+  it("branchIsMergedInto returns true for a branch merged into target", async () => {
+    const repo = await tmp();
+    await initRepo(repo);
+    await execa("git", ["-C", repo, "branch", "feat/x"]);
+    // feat/x points at the same commit as main, so it's trivially "merged"
+    expect(await branchIsMergedInto(repo, "feat/x", "main")).toBe(true);
   });
 });

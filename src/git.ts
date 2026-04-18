@@ -14,7 +14,8 @@ export async function getToplevel(cwd: string): Promise<string | null> {
 export async function isWorktreeRoot(repoPath: string): Promise<boolean> {
   const { stdout, exitCode } = await run(repoPath, ["rev-parse", "--git-common-dir"]);
   if (exitCode !== 0) return false;
-  const { stdout: gitDir } = await run(repoPath, ["rev-parse", "--git-dir"]);
+  const { stdout: gitDir, exitCode: exitCode2 } = await run(repoPath, ["rev-parse", "--git-dir"]);
+  if (exitCode2 !== 0) return false;
   return stdout.trim() === gitDir.trim();
 }
 
@@ -62,7 +63,7 @@ export async function listWorktrees(repoPath: string): Promise<WorktreeEntry[]> 
       cur = { worktree: line.slice("worktree ".length) };
     } else if (line.startsWith("HEAD ") && cur) {
       cur.head = line.slice("HEAD ".length);
-    } else if (line.startsWith("branch ") && cur) {
+    } else if (line.startsWith("branch refs/heads/") && cur) {
       cur.branch = line.slice("branch refs/heads/".length);
     } else if (line === "detached" && cur) {
       cur.detached = true;
@@ -157,5 +158,8 @@ export async function branchIsMergedInto(
 }
 
 export async function deleteBranch(repoPath: string, branch: string): Promise<void> {
-  await run(repoPath, ["branch", "-d", branch]);
+  const { exitCode, stdout } = await run(repoPath, ["branch", "-d", branch]);
+  if (exitCode !== 0) {
+    throw new Error(`git branch -d failed in ${repoPath}: ${stdout.trim()}`);
+  }
 }
