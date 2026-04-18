@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { WtmuxError } from "../errors.js";
 
 export type DiscoverySource = "flag" | "env" | "walk" | "xdg";
 
@@ -29,7 +30,7 @@ export async function discoverConfigPath(inputs: DiscoveryInputs): Promise<Disco
 
   if (explicit) {
     if (!(await exists(explicit))) {
-      throw new Error(`config file not found: ${explicit}`);
+      throw new WtmuxError(`config file not found: ${explicit}`, "user");
     }
     return { path: explicit, source: "flag" };
   }
@@ -37,7 +38,7 @@ export async function discoverConfigPath(inputs: DiscoveryInputs): Promise<Disco
   const envPath = env.WTMUX_CONFIG;
   if (envPath) {
     if (!(await exists(envPath))) {
-      throw new Error(`WTMUX_CONFIG not found: ${envPath}`);
+      throw new WtmuxError(`WTMUX_CONFIG not found: ${envPath}`, "user");
     }
     return { path: envPath, source: "env" };
   }

@@ -94,4 +94,24 @@ describe("cli", () => {
     expect(result.stderr).toMatch(/\[wtmux\]/);
     expect(result.stderr).toMatch(/not inside any git repository/i);
   });
+
+  it("exits 1 with [wtmux] prefix when --group names an unknown group", async () => {
+    const a = await tmp();
+    const b = await tmp();
+    await initRepo(a);
+    await initRepo(b);
+    const ra = await fs.realpath(a);
+    const rb = await fs.realpath(b);
+    await fs.writeFile(
+      path.join(ra, ".wtmux.json"),
+      JSON.stringify({ groups: [{ name: "g", repos: [ra, rb] }] }, null, 2),
+    );
+    const result = await execa("node", [BIN, "feat/x", "--group", "nonexistent", "--no-launch"], {
+      cwd: ra,
+      reject: false,
+    });
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toMatch(/\[wtmux\]/);
+    expect(result.stderr).toMatch(/nonexistent/);
+  });
 });

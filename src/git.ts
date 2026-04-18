@@ -12,11 +12,12 @@ export async function getToplevel(cwd: string): Promise<string | null> {
 }
 
 export async function isWorktreeRoot(repoPath: string): Promise<boolean> {
-  const { stdout, exitCode } = await run(repoPath, ["rev-parse", "--git-common-dir"]);
-  if (exitCode !== 0) return false;
-  const { stdout: gitDir, exitCode: exitCode2 } = await run(repoPath, ["rev-parse", "--git-dir"]);
-  if (exitCode2 !== 0) return false;
-  return stdout.trim() === gitDir.trim();
+  const [common, gitDir] = await Promise.all([
+    run(repoPath, ["rev-parse", "--git-common-dir"]),
+    run(repoPath, ["rev-parse", "--git-dir"]),
+  ]);
+  if (common.exitCode !== 0 || gitDir.exitCode !== 0) return false;
+  return common.stdout.trim() === gitDir.stdout.trim();
 }
 
 export async function getCurrentBranch(repoPath: string): Promise<string | null> {
@@ -158,8 +159,8 @@ export async function branchIsMergedInto(
 }
 
 export async function deleteBranch(repoPath: string, branch: string): Promise<void> {
-  const { exitCode, stdout } = await run(repoPath, ["branch", "-d", branch]);
-  if (exitCode !== 0) {
-    throw new Error(`git branch -d failed in ${repoPath}: ${stdout.trim()}`);
+  const result = await execa("git", ["branch", "-d", branch], { cwd: repoPath, reject: false });
+  if ((result.exitCode ?? 1) !== 0) {
+    throw new Error(`git branch -d failed in ${repoPath}: ${result.stderr}`);
   }
 }

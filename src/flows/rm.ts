@@ -1,6 +1,5 @@
-import fs from "node:fs/promises";
-import path from "node:path";
 import { WtmuxError } from "../errors.js";
+import { expandWorktreePath, pathExists } from "../paths.js";
 import { info, warn } from "../log.js";
 import { resolveGroup } from "../group.js";
 import {
@@ -102,16 +101,3 @@ export async function rmFlow(input: RmFlowInput): Promise<RmFlowResult> {
   return result;
 }
 
-async function pathExists(p: string): Promise<boolean> {
-  try {
-    await fs.lstat(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function expandWorktreePath(repo: string, pattern: string, name: string): string {
-  const rendered = pattern.replaceAll("{name}", name);
-  return path.isAbsolute(rendered) ? rendered : path.join(repo, rendered);
-}

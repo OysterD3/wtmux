@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import { discoverConfigPath, type DiscoverySource } from "./discovery.js";
 import { ConfigSchema, type Config } from "./schema.js";
+import { WtmuxError } from "../errors.js";
 
 export interface LoadInputs {
   cwd: string;
@@ -32,7 +33,7 @@ export async function loadConfig(inputs: LoadInputs): Promise<LoadedConfig | nul
   try {
     parsed = JSON.parse(raw);
   } catch (err) {
-    throw new Error(`invalid JSON in ${discovered.path}: ${(err as Error).message}`);
+    throw new WtmuxError(`invalid JSON in ${discovered.path}: ${(err as Error).message}`, "user");
   }
 
   const expanded = expandRepoPathsAgainstHome(parsed, home);

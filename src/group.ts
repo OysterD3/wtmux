@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import { getToplevel } from "./git.js";
 import type { Config, Group } from "./config/schema.js";
+import { WtmuxError } from "./errors.js";
 
 export type GroupResolution =
   | { kind: "group"; group: Group; primary: string }
@@ -18,7 +19,7 @@ export async function resolveGroup(inputs: ResolveInputs): Promise<GroupResoluti
 
   if (groupFlag) {
     const g = config.groups.find((x) => x.name === groupFlag);
-    if (!g) throw new Error(`--group "${groupFlag}" does not match any configured group`);
+    if (!g) throw new WtmuxError(`--group "${groupFlag}" does not match any configured group`, "user");
     const primary = await determinePrimary(cwd, g);
     return { kind: "group", group: g, primary };
   }
@@ -37,8 +38,9 @@ export async function resolveGroup(inputs: ResolveInputs): Promise<GroupResoluti
 
   if (found.length === 0) return { kind: "single", repo: realTop };
   if (found.length > 1) {
-    throw new Error(
+    throw new WtmuxError(
       `cwd matches more than one group (${found.map((g) => g.name).join(", ")}) — pass --group`,
+      "user",
     );
   }
   const group = found[0]!;

@@ -23,7 +23,6 @@
     "format:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts'"
   },
   "dependencies": {
-    "@clack/prompts": "^0.11.0",
     "citty": "^0.1.6",
     "execa": "^9.5.0",
     "zod": "^4.0.0"

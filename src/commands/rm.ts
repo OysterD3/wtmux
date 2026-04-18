@@ -1,5 +1,6 @@
 import { defineCommand } from "citty";
 import { loadConfig } from "../config/load.js";
+import { DEFAULT_CONFIG } from "../config/defaults.js";
 import { rmFlow } from "../flows/rm.js";
 import { setVerbose } from "../log.js";
 import type { Config } from "../config/schema.js";
@@ -21,12 +22,7 @@ export const rmCommand = defineCommand({
       env: process.env,
       explicit: args.config,
     });
-    const config: Config = loaded?.config ?? {
-      symlinkDirectories: ["node_modules", ".env"],
-      worktreePathPattern: ".worktrees/{name}",
-      launchCommand: ["claude"],
-      groups: [],
-    };
+    const config: Config = loaded?.config ?? DEFAULT_CONFIG;
 
     const result = await rmFlow({
       name: args.name,

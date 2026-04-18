@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import {
   branchExists,
   checkRefFormat,
@@ -6,6 +5,7 @@ import {
   isWorktreeRoot,
   listWorktrees,
 } from "./git.js";
+import { pathExists } from "./paths.js";
 
 export interface PreflightRepoInput {
   path: string;
@@ -57,11 +57,3 @@ export async function preflightCreate(input: PreflightInput): Promise<PreflightR
   return { ok: errors.length === 0, errors };
 }
 
-async function pathExists(p: string): Promise<boolean> {
-  try {
-    await fs.lstat(p);
-    return true;
-  } catch {
-    return false;
-  }
-}

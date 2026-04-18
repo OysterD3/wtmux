@@ -1,5 +1,5 @@
-import path from "node:path";
 import { WtmuxError } from "../errors.js";
+import { expandWorktreePath } from "../paths.js";
 import { debug, info } from "../log.js";
 import { resolveGroup, type GroupResolution } from "../group.js";
 import { preflightCreate } from "../preflight.js";
@@ -173,7 +173,3 @@ async function createGroup(
   return { kind: "group", worktrees: plan.repos.map(({ path: repo, wtPath }) => ({ repo, wtPath })), primary };
 }
 
-function expandWorktreePath(repo: string, pattern: string, name: string): string {
-  const rendered = pattern.replaceAll("{name}", name);
-  return path.isAbsolute(rendered) ? rendered : path.join(repo, rendered);
-}
