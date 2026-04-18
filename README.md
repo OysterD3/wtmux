@@ -1,83 +1,114 @@
-# wtmux
+# wtmux — coordinated git worktrees for Claude Code and multi-repo monorepos
 
-Coordinated git worktrees across sibling repos, with auto-replicated symlinks (`node_modules`, `.env`) and a one-shot launch into `claude` (or your editor of choice) with all sibling worktrees wired up as additional directories.
+**One command, one branch name, every sibling repo in sync — and Claude Code launches with all of them wired up.**
 
-**Status:** v0.1 — build from source (not yet published to npm). See [`docs/design.md`](docs/design.md) for the full design.
+`wtmux` creates matching git worktrees across every repo you care about, symlinks `node_modules` / `.env` / whatever else you need, then launches [Claude Code](https://claude.com/claude-code) (or your editor of choice) with the siblings already mounted as `--add-dir` paths.
+
+If you've ever run Claude Code on an API repo with a frontend `--add-dir`'d in, checked out a feature branch, and realized the frontend is still on `main` — this is the fix.
+
+---
+
+## Why wtmux
+
+Claude Code's native `/worktree` command creates a worktree for the primary working directory **only**. Any repo you added with `--add-dir` stays on whatever branch it was on. You end up working on an isolated feature branch in one repo while the other is stale.
+
+Claude Code has no hook or config to rewrite `--add-dir` paths mid-session, so this can't be fixed with a hook. `wtmux` replaces the worktree-creation step with a wrapper that:
+
+1. **Creates matching worktrees** in every configured sibling repo — same branch name, same base branch.
+2. **Replicates symlinks** (`node_modules`, `.env`, etc.) from each origin into its new worktree, so dev servers and environment config just work.
+3. **Launches `claude`** with every non-primary worktree wired up as an `--add-dir` path — so your Claude Code session sees a coherent multi-repo workspace from the start.
+
+## Features
+
+- 🌳 **Coordinated worktrees** across a configured group of sibling repos
+- 🔗 **Symlink replication** that mirrors Claude Code's `worktree.symlinkDirectories`
+- 🚀 **One-shot Claude Code launch** with siblings auto-registered as `--add-dir`
+- 🛡️ **Safe teardown** — `wtmux rm` refuses to remove worktrees with uncommitted changes, stashes, or unpushed commits (override with `--force`)
+- 🔍 **Preflight validation** — checks branch names via `git check-ref-format`, verifies worktree roots, detects branch conflicts before mutating anything
+- ♻️ **Automatic rollback** when a worktree creation fails partway through the group
+- 📦 **Single-repo fallback** — works outside configured groups too
+- 🖇️ **Editor-agnostic** — swap `claude` for `code`, `cursor`, or any editor via `launchCommand`
+- 🔒 **Zero network, zero telemetry** — local-only tool
 
 ## Install
 
-From source:
+From source (v0.1.0 — npm publish coming soon):
 
 ```bash
-git clone <repo>
+git clone https://github.com/OysterD3/wtmux.git
 cd wtmux
 pnpm install
 pnpm build
 pnpm link --global
 ```
 
-Once published:
+Requirements: **Node.js 20+**, **git**, **pnpm** (for dev; install is npm/yarn-compatible once published).
 
-```bash
-pnpm add -g wtmux
-```
+## Quick start
 
-## The problem
-
-Claude Code's `/worktree` command creates a worktree for the primary working directory only. If you have added a sibling repo via `--add-dir` (e.g. a frontend alongside a backend), that directory keeps pointing at the original path — on whatever branch it happened to be on. You end up working on an isolated feature branch in one repo while the other is stale.
-
-Claude Code has no mechanism to rewrite `--add-dir` paths mid-session, so a pure hook-based fix isn't possible. `wtmux` replaces the worktree-creation step with a wrapper that:
-
-1. Creates matching worktrees in every configured sibling repo (same branch name, same base branch).
-2. Symlinks `node_modules` / `.env` / etc. into each worktree — replicating Claude's `worktree.symlinkDirectories` behavior.
-3. Launches `claude` with sibling worktrees passed as `--add-dir`, so the in-session view of additional directories already points at the correct worktrees.
-
-## Usage
-
-```bash
-# Create coordinated worktrees on branch feat/foo across the group, then launch claude.
-wtmux feat/foo
-
-# Remove them (refuses if any side has uncommitted/unpushed work).
-wtmux rm feat/foo
-
-# List coordinated worktrees in the current group.
-wtmux ls
-```
-
-Config lives at `~/.config/wtmux/config.json` or `.wtmux.json` walking upward from cwd:
+Add a config at `~/.config/wtmux/config.json` (or `.wtmux.json` in your monorepo root):
 
 ```json
 {
-  "symlinkDirectories": ["node_modules", ".env"],
   "groups": [
     {
-      "name": "whatsapp-manager",
+      "name": "myapp",
       "repos": [
-        "/Users/you/whatsapp-manager/whatsapp-manager-api",
-        "/Users/you/whatsapp-manager/whatsapp-manager-web"
+        "~/code/myapp-api",
+        "~/code/myapp-web"
       ]
     }
   ]
 }
 ```
 
-## Stack
+Then, from inside either repo:
 
-TypeScript · Node 20+ · citty · `@clack/prompts` · execa · zod · tsup · vitest
+```bash
+wtmux feat/login
+```
 
-See `docs/design.md` §12 for full stack rationale.
+That creates `~/code/myapp-api/.worktrees/feat/login` and `~/code/myapp-web/.worktrees/feat/login`, both checked out on `feat/login` branched from the primary's current branch, both with `node_modules` and `.env` symlinked from their origins — and launches `claude` with the sibling wired up as `--add-dir`.
+
+When you're done:
+
+```bash
+wtmux rm feat/login
+```
+
+`rm` refuses if any side is dirty, stashed, or unpushed. Pass `--force` to override.
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `wtmux <name>` | Create coordinated worktrees on branch `<name>` and launch Claude Code |
+| `wtmux rm <name>` | Remove coordinated worktrees (refuses on dirty / stashed / unpushed; `--force` overrides) |
+| `wtmux ls` | List coordinated worktrees across the current group, with per-repo state |
+
+## Flags
+
+| Flag | Purpose |
+|---|---|
+| `--config <path>` | Override config discovery |
+| `--group <name>` | Override auto-detected group (useful from arbitrary cwd) |
+| `--dry-run` | Print the plan without mutating |
+| `--no-launch` | Skip launching Claude Code at the end of `create` |
+| `--force` | `rm` only: skip dirty/stash/unpushed guards |
+| `-v`, `--verbose` | Extra logging |
+| `--version` | Print version |
+| `--help` | Print help |
 
 ## Configuration
 
-Config lives at one of (in priority order):
+Config lookup order (first match wins):
 
 1. Path passed via `--config <path>`
 2. `$WTMUX_CONFIG` environment variable
-3. `.wtmux.json` found by walking upward from cwd to the filesystem root
+3. `.wtmux.json` found by walking upward from cwd
 4. `~/.config/wtmux/config.json`
 
-Example config:
+### Full schema
 
 ```json
 {
@@ -86,30 +117,63 @@ Example config:
   "launchCommand": ["claude"],
   "groups": [
     {
-      "name": "whatsapp-manager",
+      "name": "myapp",
       "repos": [
-        "~/whatsapp-manager/whatsapp-manager-api",
-        "~/whatsapp-manager/whatsapp-manager-web"
-      ]
+        "~/code/myapp-api",
+        "~/code/myapp-web"
+      ],
+      "symlinkDirectories": ["node_modules", ".env", ".env.local"]
     }
   ]
 }
 ```
 
-Running `wtmux <name>` from inside any repo in a group creates matching worktrees in every sibling repo on the same branch, replicates `symlinkDirectories` from each origin into its new worktree, and launches `claude` with each non-primary worktree wired up as an `--add-dir`.
-
-## Flags
-
-| Flag | Purpose |
+| Field | Purpose |
 |---|---|
-| `--config <path>` | Override config discovery |
-| `--group <name>` | Override auto-detected group |
-| `--dry-run` | Print the plan without mutating |
-| `--no-launch` | Skip `exec claude` at the end of `create` |
-| `-v`, `--verbose` | Extra logging |
+| `symlinkDirectories` | Default paths to symlink from each repo root into each new worktree. Defaults to `["node_modules", ".env"]`. |
+| `worktreePathPattern` | Where worktrees land inside each repo. `{name}` interpolates the worktree name. Defaults to `.worktrees/{name}`. |
+| `launchCommand` | Argv to exec after worktrees are created. Defaults to `["claude"]`. Override for other editors. |
+| `groups[].name` | Unique group identifier. |
+| `groups[].repos` | Absolute or tilde-prefixed paths (min 2 repos — coordination needs siblings). |
+| `groups[].symlinkDirectories` | Per-group override (replaces the top-level list). |
+| `groups[].worktreePathPattern` | Per-group override. |
+| `groups[].launchCommand` | Per-group override. |
 
-`wtmux rm <name>` refuses to remove a coordinated worktree if any side has uncommitted changes, stashes, or unpushed commits. Pass `--force` to override.
+`wtmux` appends `--add-dir <sibling-wt>` flags automatically **only when `launchCommand[0] === "claude"`**. For other editors, sibling worktree paths are appended as positional arguments.
+
+## FAQ
+
+**Does `wtmux` work without Claude Code?**
+Yes. Set `"launchCommand": ["code", "."]` (VS Code) or `["cursor", "."]` (Cursor) or any other editor. Claude Code's `--add-dir` flag injection only fires when the launch command is literally `claude`.
+
+**Can I use it with only one repo?**
+Yes. Run `wtmux <name>` from inside any git repo that isn't in a configured group — you get single-repo worktree creation + symlinks + Claude launch, no siblings.
+
+**What happens if the worktrees already exist?**
+`wtmux` refuses to create over existing worktrees. Use `wtmux rm <name>` first, or pick a different name.
+
+**How do I remove a worktree with uncommitted work?**
+Commit, stash, or push first — or pass `--force`. `wtmux rm` intentionally refuses to silently discard work.
+
+**What's the difference from `git worktree add`?**
+`wtmux` coordinates the same worktree across multiple repos, replicates symlinks into each, and launches Claude Code with them wired up — in one command. Plain `git worktree add` handles one repo at a time and doesn't touch symlinks or your editor.
+
+**Does it support Windows?**
+Not yet. macOS and Linux only. PRs welcome.
+
+**Does it send anything over the network?**
+No. `wtmux` is a local tool — no telemetry, no updates checks, no API calls.
+
+## Status
+
+v0.1.0 — stable for personal use, not yet published to npm.
+
+Exit codes follow Unix conventions: `0` success, `1` user error, `2` precondition failure, `3` internal error.
+
+## Contributing
+
+Bug reports and PRs welcome at [github.com/OysterD3/wtmux](https://github.com/OysterD3/wtmux). The test suite uses real git repos in tmpdirs — `pnpm test` runs ~80 tests in a few seconds.
 
 ## License
 
-MIT.
+MIT © oysterlee
