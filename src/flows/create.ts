@@ -150,7 +150,7 @@ async function createGroup(
     }
   } catch (err) {
     debug(`rollback triggered: ${(err as Error).message}`);
-    for (const p of placed.reverse()) {
+    for (const p of [...placed].reverse()) {
       await removeSymlinks(p.wtPath, p.items).catch(() => undefined);
       await worktreeRemove(p.repo, p.wtPath, { force: true }).catch(() => undefined);
     }

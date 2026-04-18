@@ -117,4 +117,34 @@ describe("createFlow", () => {
 
     await expect(fs.stat(path.join(a, ".worktrees/feat/collide"))).rejects.toThrow();
   });
+
+  it("rolls back repo A's worktree when repo B's worktree add fails at runtime (post-preflight)", async () => {
+    const { cfg, a, b } = await setupGroup();
+
+    // Put a FILE where repo B's .worktrees/ directory would go.
+    // pathExists(.worktrees/feat/x) returns false (ENOTDIR) so preflight passes,
+    // but `git worktree add` will fail when it tries to create .worktrees/feat/x.
+    await fs.writeFile(path.join(b, ".worktrees"), "blocker\n");
+
+    await expect(
+      createFlow({
+        name: "feat/rollback",
+        cwd: a,
+        config: cfg,
+        groupFlag: undefined,
+        dryRun: false,
+        noLaunch: true,
+        extraArgs: [],
+      }),
+    ).rejects.toThrow();
+
+    // Critically: repo A's worktree must have been created first (in the try block)
+    // and then rolled back when repo B's worktreeAdd failed. If rollback works,
+    // the path should not exist after the throw.
+    await expect(fs.stat(path.join(a, ".worktrees/feat/rollback"))).rejects.toThrow();
+
+    // Also verify repo B has nothing — the blocker file is still there but no worktree.
+    const bStat = await fs.lstat(path.join(b, ".worktrees"));
+    expect(bStat.isFile()).toBe(true); // still the blocker file we put down
+  });
 });
