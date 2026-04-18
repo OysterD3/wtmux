@@ -27,6 +27,35 @@ async function dispatch(): Promise<void> {
     process.exit(0);
   }
 
+  // Handle bare --help to show top-level usage including subcommands.
+  if (rawArgs.length === 0 || (rawArgs.length === 1 && rawArgs[0] === "--help")) {
+    process.stdout.write(
+      [
+        `wtmux v${version} — coordinated git worktrees across sibling repos`,
+        ``,
+        `Usage:`,
+        `  wtmux <name> [-- claude-args...]   Create coordinated worktrees named <name>`,
+        `  wtmux rm <name>                    Remove coordinated worktrees named <name>`,
+        `  wtmux ls                           List worktrees across the group`,
+        ``,
+        `Subcommands:`,
+        `  rm    Remove a coordinated worktree set`,
+        `  ls    List worktrees across the group`,
+        ``,
+        `Flags:`,
+        `  --config <path>   Override config file path`,
+        `  --group <name>    Override auto-detected group`,
+        `  --dry-run         Print the plan without mutating`,
+        `  --no-launch       Skip exec at the end of create`,
+        `  -v, --verbose     Extra logging`,
+        `  --version         Print version`,
+        `  --help            Show this help`,
+        ``,
+      ].join("\n"),
+    );
+    process.exit(0);
+  }
+
   if (firstArg !== undefined && KNOWN_SUBCOMMANDS.has(firstArg)) {
     // Route to a dedicated command that only has subCommands defined.
     const subCmd = defineCommand({
