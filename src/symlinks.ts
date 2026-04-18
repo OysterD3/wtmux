@@ -26,16 +26,22 @@ export async function replicateSymlinks(inputs: ReplicateInputs): Promise<Symlin
     let sourceStat;
     try {
       sourceStat = await fs.stat(source);
-    } catch {
-      results.push({ item, action: "skipped-no-source" });
-      continue;
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") {
+        results.push({ item, action: "skipped-no-source" });
+        continue;
+      }
+      throw err;
     }
 
     try {
       await fs.lstat(target);
       results.push({ item, action: "skipped-target-exists" });
       continue;
-    } catch {
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw err;
       // target missing — good
     }
 
@@ -52,7 +58,9 @@ export async function removeSymlinks(wt: string, items: readonly string[]): Prom
     try {
       const stat = await fs.lstat(target);
       if (stat.isSymbolicLink()) await fs.unlink(target);
-    } catch {
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code !== "ENOENT") throw err;
       // nothing to remove
     }
   }
