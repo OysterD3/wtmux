@@ -1,14 +1,40 @@
 {
   "name": "wtmux",
   "version": "0.1.0",
-  "description": "Coordinated git worktrees across sibling repos with symlink replication and one-shot Claude launch.",
+  "description": "Coordinated git worktrees across sibling repos with symlink replication and one-shot Claude Code launch.",
   "license": "MIT",
+  "author": "Oyster Lee <oysterd3@gmail.com>",
+  "homepage": "https://github.com/OysterD3/wtmux#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OysterD3/wtmux.git"
+  },
+  "bugs": {
+    "url": "https://github.com/OysterD3/wtmux/issues"
+  },
+  "keywords": [
+    "git",
+    "worktree",
+    "worktrees",
+    "git-worktree",
+    "claude",
+    "claude-code",
+    "monorepo",
+    "multi-repo",
+    "cli",
+    "add-dir",
+    "coordinated-worktrees",
+    "sibling-repos",
+    "symlink"
+  ],
   "type": "module",
   "bin": {
     "wtmux": "./dist/wtmux.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE",
+    "README.md"
   ],
   "engines": {
     "node": ">=20"
@@ -20,7 +46,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint 'src/**/*.ts' 'tests/**/*.ts'",
     "format": "prettier --write 'src/**/*.ts' 'tests/**/*.ts'",
-    "format:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts'"
+    "format:check": "prettier --check 'src/**/*.ts' 'tests/**/*.ts'",
+    "prepublishOnly": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build"
   },
   "dependencies": {
     "citty": "^0.1.6",

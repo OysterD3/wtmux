@@ -32,7 +32,15 @@ Claude Code has no hook or config to rewrite `--add-dir` paths mid-session, so t
 
 ## Install
 
-From source (v0.1.0 — npm publish coming soon):
+```bash
+pnpm add -g wtmux
+# or
+npm install -g wtmux
+# or
+yarn global add wtmux
+```
+
+From source:
 
 ```bash
 git clone https://github.com/OysterD3/wtmux.git
@@ -42,7 +50,7 @@ pnpm build
 pnpm link --global
 ```
 
-Requirements: **Node.js 20+**, **git**, **pnpm** (for dev; install is npm/yarn-compatible once published).
+Requirements: **Node.js 20+** and **git**.
 
 ## Quick start
 
@@ -166,7 +174,7 @@ No. `wtmux` is a local tool — no telemetry, no updates checks, no API calls.
 
 ## Status
 
-v0.1.0 — stable for personal use, not yet published to npm.
+v0.1.0 — stable for personal use.
 
 Exit codes follow Unix conventions: `0` success, `1` user error, `2` precondition failure, `3` internal error.
 
