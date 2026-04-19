@@ -1,6 +1,6 @@
 {
   "name": "wtmux",
-  "version": "0.1.0",
+  "version": "0.2.0-dev",
   "description": "Coordinated git worktrees across sibling repos with symlink replication and one-shot Claude Code launch.",
   "license": "MIT",
   "author": "Oyster Lee <oysterd3@gmail.com>",
@@ -50,6 +50,7 @@
     "prepublishOnly": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run build"
   },
   "dependencies": {
+    "@clack/prompts": "^0.11.0",
     "citty": "^0.1.6",
     "execa": "^9.5.0",
     "zod": "^4.0.0"
