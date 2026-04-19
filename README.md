@@ -93,6 +93,7 @@ wtmux rm feat/login
 | `wtmux <name>` | Create coordinated worktrees on branch `<name>` and launch Claude Code |
 | `wtmux rm <name>` | Remove coordinated worktrees (refuses on dirty / stashed / unpushed; `--force` overrides) |
 | `wtmux ls` | List coordinated worktrees across the current group, with per-repo state |
+| `wtmux config` | Interactively edit the wtmux config (create/edit/delete groups) |
 
 ## Flags
 
@@ -151,6 +152,9 @@ Config lookup order (first match wins):
 
 ## FAQ
 
+**How do I create a config without hand-writing JSON?**
+Run `wtmux config` from anywhere. It auto-detects sibling git repos in the parent directory and walks you through creating a group, with options to edit or delete groups later.
+
 **Does `wtmux` work without Claude Code?**
 Yes. Set `"launchCommand": ["code", "."]` (VS Code) or `["cursor", "."]` (Cursor) or any other editor. Claude Code's `--add-dir` flag injection only fires when the launch command is literally `claude`.
 
@@ -174,7 +178,7 @@ No. `wtmux` is a local tool — no telemetry, no updates checks, no API calls.
 
 ## Status
 
-v0.1.0 — stable for personal use.
+v0.2.0 — stable for personal use.
 
 Exit codes follow Unix conventions: `0` success, `1` user error, `2` precondition failure, `3` internal error.
 
