@@ -1,8 +1,11 @@
-import { describe, expect, it } from "vitest";
+import fs from "node:fs/promises";
+import { afterEach, describe, expect, it } from "vitest";
 import {
+  resolveRepoPath,
   validateGroupName,
   validateWorktreePattern,
 } from "../../src/tui/prompts.js";
+import { initRepo, makeTmpDir } from "../helpers/fixtures.js";
 
 describe("validateGroupName", () => {
   it("accepts a unique non-empty name", () => {
@@ -38,5 +41,46 @@ describe("validateWorktreePattern", () => {
 
   it("rejects a non-empty pattern missing {name}", () => {
     expect(validateWorktreePattern(".worktrees/fixed")).toMatch(/\{name\}/);
+  });
+});
+
+const tmpdirs: string[] = [];
+const tmp = async () => {
+  const d = await makeTmpDir();
+  tmpdirs.push(d);
+  return d;
+};
+
+afterEach(async () => {
+  while (tmpdirs.length) await fs.rm(tmpdirs.pop()!, { recursive: true, force: true });
+});
+
+describe("resolveRepoPath", () => {
+  it("accepts a real git repo path", async () => {
+    const repo = await tmp();
+    await initRepo(repo);
+    const real = await fs.realpath(repo);
+    const result = await resolveRepoPath(repo);
+    expect(result.ok).toBe(true);
+    expect(result.resolved).toBe(real);
+  });
+
+  it("rejects a non-git directory", async () => {
+    const dir = await tmp();
+    const result = await resolveRepoPath(dir);
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/not a git repository/i);
+  });
+
+  it("rejects a non-absolute path", async () => {
+    const result = await resolveRepoPath("relative/path");
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/absolute/i);
+  });
+
+  it("rejects empty input", async () => {
+    const result = await resolveRepoPath("   ");
+    expect(result.ok).toBe(false);
+    expect(result.error).toMatch(/empty/i);
   });
 });
