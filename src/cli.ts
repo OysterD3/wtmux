@@ -4,6 +4,7 @@ import { realpathSync } from "node:fs";
 import { createCommand } from "./commands/create.js";
 import { rmCommand } from "./commands/rm.js";
 import { lsCommand } from "./commands/ls.js";
+import { configCommand } from "./commands/config.js";
 import { exitCodeFor } from "./errors.js";
 
 export const version = "0.1.0";
@@ -11,7 +12,7 @@ export const version = "0.1.0";
 // citty throws "Unknown command" for any non-flag arg not in subCommands.
 // We detect whether the user is invoking a subcommand and route manually to
 // avoid the conflict between positional <name> and subcommand routing.
-const KNOWN_SUBCOMMANDS = new Set(["rm", "ls"]);
+const KNOWN_SUBCOMMANDS = new Set(["rm", "ls", "config"]);
 
 function firstNonFlag(args: string[]): string | undefined {
   return args.find((a) => !a.startsWith("-"));
@@ -39,8 +40,9 @@ async function dispatch(): Promise<void> {
         `  wtmux ls                           List worktrees across the group`,
         ``,
         `Subcommands:`,
-        `  rm    Remove a coordinated worktree set`,
-        `  ls    List worktrees across the group`,
+        `  rm      Remove a coordinated worktree set`,
+        `  ls      List worktrees across the group`,
+        `  config  Interactively edit wtmux config`,
         ``,
         `Flags:`,
         `  --config <path>   Override config file path`,
@@ -56,11 +58,30 @@ async function dispatch(): Promise<void> {
     process.exit(0);
   }
 
+  // Handle `config --help` explicitly since citty 0.1.x passes --help into run() instead of intercepting it.
+  if (firstArg === "config" && rawArgs.includes("--help")) {
+    process.stdout.write(
+      [
+        `wtmux config — Interactively edit wtmux config`,
+        ``,
+        `Usage:`,
+        `  wtmux config [options]`,
+        ``,
+        `Options:`,
+        `  --config <path>   Path to config file`,
+        `  -v, --verbose     Extra logging`,
+        `  --help            Show this help`,
+        ``,
+      ].join("\n"),
+    );
+    process.exit(0);
+  }
+
   if (firstArg !== undefined && KNOWN_SUBCOMMANDS.has(firstArg)) {
     // Route to a dedicated command that only has subCommands defined.
     const subCmd = defineCommand({
       meta: { name: "wtmux", version, description: "Coordinated git worktrees across sibling repos" },
-      subCommands: { rm: rmCommand, ls: lsCommand },
+      subCommands: { rm: rmCommand, ls: lsCommand, config: configCommand },
     });
     await runCommand(subCmd, { rawArgs });
   } else {
