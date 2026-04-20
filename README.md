@@ -66,7 +66,7 @@ Then, from inside either repo:
 wtmux feat/login
 ```
 
-That creates `~/code/myapp-api/.worktrees/feat/login` and `~/code/myapp-web/.worktrees/feat/login`, both checked out on `feat/login` branched from the primary's current branch, both with `node_modules` and `.env` symlinked from their origins — and launches your agent (Claude Code by default) with the sibling attached.
+That creates `~/code/myapp-api/.worktrees/feat-login` and `~/code/myapp-web/.worktrees/feat-login`, both checked out on `feat/login` branched from the primary's current branch, both with `node_modules` and `.env` symlinked from their origins — and launches your agent (Claude Code by default) with the sibling attached.
 
 When you're done:
 
@@ -142,7 +142,7 @@ Config lookup order (first match wins):
 | Field | Purpose |
 |---|---|
 | `symlinkDirectories` | Paths to symlink from each repo root into each new worktree. Defaults to `["node_modules", ".env"]`. |
-| `worktreePathPattern` | Where worktrees land inside each repo. `{name}` interpolates the worktree name. Defaults to `.worktrees/{name}`. |
+| `worktreePathPattern` | Where worktrees land inside each repo. `{name}` interpolates the worktree name, with any `/` flattened to `-` so nested branch names (e.g. `feat/login`) produce a single folder (`.worktrees/feat-login`). Defaults to `.worktrees/{name}`. |
 | `launchCommand` | Argv to exec after worktrees are created. Defaults to `["claude"]`. |
 | `agent` | Force a specific agent's sibling-injection rules (`claude` \| `codex` \| `cursor` \| `code` \| `opencode` \| `qoder`). Only needed if your `launchCommand` uses a wrapper or alias that wtmux can't detect from its basename. |
 | `addDirArgs` | Argv template for CLIs wtmux doesn't know about. `{path}` is interpolated with each sibling's absolute path. See *Agents & sibling injection* below. |
@@ -231,7 +231,7 @@ Patterns resolve relative to each repo's root. Dotfiles are included by default,
 
 ## Status
 
-v0.4.1 — stable for personal use.
+v0.4.2 — stable for personal use.
 
 Exit codes follow Unix conventions: `0` success, `1` user error, `2` precondition failure, `3` internal error.
 

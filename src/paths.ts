@@ -12,8 +12,12 @@ export function isAbsolutePath(p: string): boolean {
   return path.isAbsolute(p);
 }
 
+export function flattenWorktreeName(name: string): string {
+  return name.replaceAll("/", "-");
+}
+
 export function expandWorktreePath(repo: string, pattern: string, name: string): string {
-  const rendered = pattern.replaceAll("{name}", name);
+  const rendered = pattern.replaceAll("{name}", flattenWorktreeName(name));
   return path.isAbsolute(rendered) ? rendered : path.join(repo, rendered);
 }
 

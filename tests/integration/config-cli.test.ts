@@ -1,12 +1,8 @@
 import { execa } from "execa";
 import path from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 
 const BIN = path.resolve("dist/wtmux.js");
-
-beforeAll(async () => {
-  await execa("pnpm", ["build"], { stdio: "inherit" });
-});
 
 describe("cli config", () => {
   it("prints help for `wtmux config --help`", async () => {

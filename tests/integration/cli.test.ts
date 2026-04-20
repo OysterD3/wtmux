@@ -1,18 +1,10 @@
 import { execa } from "execa";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { initRepo, makeTmpDir } from "../helpers/fixtures.js";
 
 const BIN = path.resolve("dist/wtmux.js");
-
-async function _ensureBuilt(): Promise<void> {
-  try {
-    await fs.access(BIN);
-  } catch {
-    await execa("pnpm", ["build"], { stdio: "inherit" });
-  }
-}
 
 const tmpdirs: string[] = [];
 const tmp = async () => {
@@ -20,11 +12,6 @@ const tmp = async () => {
   tmpdirs.push(d);
   return d;
 };
-
-beforeAll(async () => {
-  // Always rebuild to pick up latest CLI code
-  await execa("pnpm", ["build"], { stdio: "inherit" });
-});
 
 afterEach(async () => {
   while (tmpdirs.length) await fs.rm(tmpdirs.pop()!, { recursive: true, force: true });
@@ -53,8 +40,8 @@ describe("cli", () => {
       reject: false,
     });
     expect(result.exitCode).toBe(0);
-    expect((await fs.stat(path.join(ra, ".worktrees/feat/cli"))).isDirectory()).toBe(true);
-    expect((await fs.stat(path.join(rb, ".worktrees/feat/cli"))).isDirectory()).toBe(true);
+    expect((await fs.stat(path.join(ra, ".worktrees/feat-cli"))).isDirectory()).toBe(true);
+    expect((await fs.stat(path.join(rb, ".worktrees/feat-cli"))).isDirectory()).toBe(true);
   });
 
   it("removes via `wtmux rm <name>`", async () => {
@@ -71,7 +58,7 @@ describe("cli", () => {
     await execa("node", [BIN, "feat/gone", "--no-launch"], { cwd: ra });
     const result = await execa("node", [BIN, "rm", "feat/gone"], { cwd: ra, reject: false });
     expect(result.exitCode).toBe(0);
-    await expect(fs.stat(path.join(ra, ".worktrees/feat/gone"))).rejects.toThrow();
+    await expect(fs.stat(path.join(ra, ".worktrees/feat-gone"))).rejects.toThrow();
   });
 
   it("exits non-zero with a clear message on precondition failure (no repo)", async () => {
@@ -130,9 +117,9 @@ describe("cli", () => {
     const result = await execa("node", [BIN, "--no-launch"], { cwd: ra, reject: false });
     expect(result.exitCode).toBe(0);
 
-    const entries = await fs.readdir(path.join(ra, ".worktrees", "wt"));
+    const entries = await fs.readdir(path.join(ra, ".worktrees"));
     expect(entries.length).toBeGreaterThan(0);
-    expect(entries[0]!).toMatch(/^[a-z]+-[a-z]+$/);
+    expect(entries[0]!).toMatch(/^wt-[a-z]+-[a-z]+$/);
   });
 
   it("creates a worktree from the --base branch via short-form flag", async () => {
@@ -154,6 +141,6 @@ describe("cli", () => {
       reject: false,
     });
     expect(result.exitCode).toBe(0);
-    expect((await fs.stat(path.join(ra, ".worktrees/feat/short-base"))).isDirectory()).toBe(true);
+    expect((await fs.stat(path.join(ra, ".worktrees/feat-short-base"))).isDirectory()).toBe(true);
   });
 });

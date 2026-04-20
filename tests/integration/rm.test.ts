@@ -65,14 +65,14 @@ describe("rmFlow", () => {
     });
 
     expect(result.removed.length).toBe(2);
-    await expect(fs.stat(path.join(a, ".worktrees/feat/clean"))).rejects.toThrow();
-    await expect(fs.stat(path.join(b, ".worktrees/feat/clean"))).rejects.toThrow();
+    await expect(fs.stat(path.join(a, ".worktrees/feat-clean"))).rejects.toThrow();
+    await expect(fs.stat(path.join(b, ".worktrees/feat-clean"))).rejects.toThrow();
   });
 
   it("skips a dirty worktree and reports it", async () => {
     const { cfg, a, b } = await setupGroup();
     await createPair("feat/dirty", cfg, a);
-    const wtA = path.join(a, ".worktrees/feat/dirty");
+    const wtA = path.join(a, ".worktrees/feat-dirty");
     await fs.writeFile(path.join(wtA, "README.md"), "dirty\n");
 
     const result = await rmFlow({
@@ -91,7 +91,7 @@ describe("rmFlow", () => {
   it("skips a worktree with stashes and reports it", async () => {
     const { cfg, a } = await setupGroup();
     await createPair("feat/stashed", cfg, a);
-    const wtA = path.join(a, ".worktrees/feat/stashed");
+    const wtA = path.join(a, ".worktrees/feat-stashed");
     await fs.writeFile(path.join(wtA, "README.md"), "stashed\n");
     await execa("git", ["-C", wtA, "stash", "push", "-m", "wip"]);
 
@@ -110,7 +110,7 @@ describe("rmFlow", () => {
   it("--force removes dirty worktrees", async () => {
     const { cfg, a } = await setupGroup();
     await createPair("feat/forced", cfg, a);
-    const wtA = path.join(a, ".worktrees/feat/forced");
+    const wtA = path.join(a, ".worktrees/feat-forced");
     await fs.writeFile(path.join(wtA, "README.md"), "dirty\n");
 
     const result = await rmFlow({
@@ -137,6 +137,6 @@ describe("rmFlow", () => {
       dryRun: true,
       force: false,
     });
-    expect((await fs.stat(path.join(a, ".worktrees/feat/preview"))).isDirectory()).toBe(true);
+    expect((await fs.stat(path.join(a, ".worktrees/feat-preview"))).isDirectory()).toBe(true);
   });
 });

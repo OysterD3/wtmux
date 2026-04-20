@@ -53,8 +53,8 @@ describe("createFlow", () => {
     expect(result.kind).toBe("group");
     if (result.kind !== "group") return;
 
-    const wtA = path.join(a, ".worktrees/feat/x");
-    const wtB = path.join(b, ".worktrees/feat/x");
+    const wtA = path.join(a, ".worktrees/feat-x");
+    const wtB = path.join(b, ".worktrees/feat-x");
     expect((await fs.stat(wtA)).isDirectory()).toBe(true);
     expect((await fs.stat(wtB)).isDirectory()).toBe(true);
 
@@ -78,8 +78,8 @@ describe("createFlow", () => {
       extraArgs: [],
       baseOverride: undefined,
     });
-    await expect(fs.stat(path.join(a, ".worktrees/feat/dry"))).rejects.toThrow();
-    await expect(fs.stat(path.join(b, ".worktrees/feat/dry"))).rejects.toThrow();
+    await expect(fs.stat(path.join(a, ".worktrees/feat-dry"))).rejects.toThrow();
+    await expect(fs.stat(path.join(b, ".worktrees/feat-dry"))).rejects.toThrow();
   });
 
   it("rejects detached HEAD in primary", async () => {
@@ -102,7 +102,7 @@ describe("createFlow", () => {
 
   it("rolls back already-created worktrees when a later repo fails", async () => {
     const { cfg, a, b } = await setupGroup();
-    const collision = path.join(b, ".worktrees/feat/collide");
+    const collision = path.join(b, ".worktrees/feat-collide");
     await fs.mkdir(collision, { recursive: true });
     await fs.writeFile(path.join(collision, "marker"), "x");
 
@@ -119,15 +119,15 @@ describe("createFlow", () => {
       }),
     ).rejects.toThrow();
 
-    await expect(fs.stat(path.join(a, ".worktrees/feat/collide"))).rejects.toThrow();
+    await expect(fs.stat(path.join(a, ".worktrees/feat-collide"))).rejects.toThrow();
   });
 
   it("rolls back repo A's worktree when repo B's worktree add fails at runtime (post-preflight)", async () => {
     const { cfg, a, b } = await setupGroup();
 
     // Put a FILE where repo B's .worktrees/ directory would go.
-    // pathExists(.worktrees/feat/x) returns false (ENOTDIR) so preflight passes,
-    // but `git worktree add` will fail when it tries to create .worktrees/feat/x.
+    // pathExists(.worktrees/feat-x) returns false (ENOTDIR) so preflight passes,
+    // but `git worktree add` will fail when it tries to create .worktrees/feat-x.
     await fs.writeFile(path.join(b, ".worktrees"), "blocker\n");
 
     await expect(
@@ -146,7 +146,7 @@ describe("createFlow", () => {
     // Critically: repo A's worktree must have been created first (in the try block)
     // and then rolled back when repo B's worktreeAdd failed. If rollback works,
     // the path should not exist after the throw.
-    await expect(fs.stat(path.join(a, ".worktrees/feat/rollback"))).rejects.toThrow();
+    await expect(fs.stat(path.join(a, ".worktrees/feat-rollback"))).rejects.toThrow();
 
     // Also verify repo B has nothing — the blocker file is still there but no worktree.
     const bStat = await fs.lstat(path.join(b, ".worktrees"));
@@ -170,7 +170,7 @@ describe("createFlow", () => {
       baseOverride: "main",
     });
 
-    const wtA = path.join(a, ".worktrees/feat/base-test");
+    const wtA = path.join(a, ".worktrees/feat-base-test");
     const parent = (await execa("git", ["-C", wtA, "rev-parse", "main"])).stdout.trim();
     const head = (await execa("git", ["-C", wtA, "rev-parse", "HEAD"])).stdout.trim();
     expect(head).toBe(parent);
@@ -209,7 +209,7 @@ describe("createFlow", () => {
       baseOverride: "main",
     });
 
-    const wtA = path.join(a, ".worktrees/feat/detached-ok");
+    const wtA = path.join(a, ".worktrees/feat-detached-ok");
     expect((await fs.stat(wtA)).isDirectory()).toBe(true);
   });
 
@@ -231,12 +231,12 @@ describe("createFlow", () => {
       baseOverride: undefined,
     });
 
-    const wtA = path.join(a, ".worktrees/feat/glob");
+    const wtA = path.join(a, ".worktrees/feat-glob");
     expect((await fs.lstat(path.join(wtA, ".env"))).isSymbolicLink()).toBe(true);
     expect((await fs.lstat(path.join(wtA, ".env.local"))).isSymbolicLink()).toBe(true);
     expect((await fs.lstat(path.join(wtA, ".env.development"))).isSymbolicLink()).toBe(true);
 
-    const wtB = path.join(b, ".worktrees/feat/glob");
+    const wtB = path.join(b, ".worktrees/feat-glob");
     await expect(fs.lstat(path.join(wtB, ".env.local"))).rejects.toThrow();
   });
 
@@ -258,7 +258,7 @@ describe("createFlow", () => {
 
     const wtPathA = result.worktrees[0]!.wtPath;
     const relA = wtPathA.substring(wtPathA.indexOf(".worktrees/") + ".worktrees/".length);
-    expect(relA).toMatch(/^wt\/[a-z]+-[a-z]+$/);
+    expect(relA).toMatch(/^wt-[a-z]+-[a-z]+$/);
 
     expect((await fs.stat(wtPathA)).isDirectory()).toBe(true);
     const wtPathB = result.worktrees.find((w) => w.repo === b)!.wtPath;
