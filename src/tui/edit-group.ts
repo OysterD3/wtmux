@@ -19,7 +19,7 @@ import {
   validateWorktreePattern,
 } from "./prompts.js";
 import type { Config } from "../config/schema.js";
-import type { AgentId } from "../agents.js";
+import { promptAgentChoice } from "./agent-select.js";
 
 export async function editGroupWizard(config: Config, cwd: string): Promise<Config | null> {
   if (config.groups.length === 0) {
@@ -123,45 +123,15 @@ export async function editGroupWizard(config: Config, cwd: string): Promise<Conf
       }
       case "agent": {
         const group = current.groups.find((g) => g.name === activeName)!;
-        const choice = await p.select({
+        const result = await promptAgentChoice({
           message: "Agent (sibling-injection strategy)",
-          options: [
-            { value: "__unset__", label: "auto-detect (from launchCommand)" },
-            { value: "claude", label: "claude" },
-            { value: "codex", label: "codex" },
-            { value: "cursor", label: "cursor" },
-            { value: "code", label: "code" },
-            { value: "opencode", label: "opencode (no multi-root)" },
-            { value: "qoder", label: "qoder (no multi-root)" },
-            { value: "__custom__", label: "custom (configure addDirArgs)" },
-          ],
-          initialValue: group.agent ?? (group.addDirArgs ? "__custom__" : "__unset__"),
+          currentAgent: group.agent,
+          currentAddDirArgs: group.addDirArgs,
         });
-        if (p.isCancel(choice)) break;
-
-        if (choice === "__unset__") {
-          current = updateGroup(current, activeName, { agent: undefined, addDirArgs: undefined });
-          break;
-        }
-        if (choice === "__custom__") {
-          const input = await p.text({
-            message: "addDirArgs template (space-separated, use {path} for sibling)",
-            placeholder: "--add-dir {path}",
-            initialValue: group.addDirArgs ? group.addDirArgs.join(" ") : "--add-dir {path}",
-            validate: (v) => (v.includes("{path}") ? undefined : "must contain {path}"),
-          });
-          if (p.isCancel(input)) break;
-          const tokens = (input as string).trim().split(/\s+/).filter((t) => t.length > 0);
-          current = updateGroup(current, activeName, {
-            agent: undefined,
-            addDirArgs: tokens,
-          });
-          break;
-        }
-        // Built-in agent selected.
+        if (result.cancelled) break;
         current = updateGroup(current, activeName, {
-          agent: choice as AgentId,
-          addDirArgs: undefined,
+          agent: result.agent,
+          addDirArgs: result.addDirArgs,
         });
         break;
       }

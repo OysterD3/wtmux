@@ -1,3 +1,5 @@
+import path from "node:path";
+
 export type AgentId = "claude" | "codex" | "cursor" | "code" | "opencode" | "qoder";
 
 export type AgentStrategy =
@@ -16,8 +18,6 @@ export const AGENT_REGISTRY: Record<AgentId, AgentStrategy> = {
 export const BASENAME_ALIAS: Record<string, AgentId> = {
   qodercli: "qoder",
 };
-
-import path from "node:path";
 
 export type ResolvedStrategy =
   | { kind: "flag"; args: readonly string[]; source: "addDirArgs" | "agent" | "basename" }
