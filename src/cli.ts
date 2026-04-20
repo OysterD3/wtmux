@@ -6,8 +6,9 @@ import { rmCommand } from "./commands/rm.js";
 import { lsCommand } from "./commands/ls.js";
 import { configCommand } from "./commands/config.js";
 import { exitCodeFor } from "./errors.js";
+import pkg from "../package.json" with { type: "json" };
 
-export const version = "0.2.0";
+export const version: string = pkg.version;
 
 // citty throws "Unknown command" for any non-flag arg not in subCommands.
 // We detect whether the user is invoking a subcommand and route manually to
