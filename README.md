@@ -97,16 +97,17 @@ wtmux rm feat/login
 
 ## Flags
 
-| Flag | Purpose |
-|---|---|
-| `--config <path>` | Override config discovery |
-| `--group <name>` | Override auto-detected group (useful from arbitrary cwd) |
-| `--dry-run` | Print the plan without mutating |
-| `--no-launch` | Skip launching Claude Code at the end of `create` |
-| `--force` | `rm` only: skip dirty/stash/unpushed guards |
-| `-v`, `--verbose` | Extra logging |
-| `--version` | Print version |
-| `--help` | Print help |
+| Flag | Short | Purpose |
+|---|---|---|
+| `--config <path>` | `-c` | Override config discovery |
+| `--group <name>` | `-g` | Override auto-detected group |
+| `--base <branch>` | `-b` | Override the base branch (create only) |
+| `--dry-run` | `-n` | Print the plan without mutating |
+| `--no-launch` | — | Skip launching Claude Code at the end of `create` |
+| `--force` | `-f` | `rm` only: skip dirty/stash/unpushed guards |
+| `--verbose` | `-v` | Extra logging |
+| `--version` | `-V` | Print version |
+| `--help` | `-h` | Print help |
 
 ## Configuration
 
@@ -150,6 +151,18 @@ Config lookup order (first match wins):
 
 `wtmux` appends `--add-dir <sibling-wt>` flags automatically **only when `launchCommand[0] === "claude"`**. For other editors, sibling worktree paths are appended as positional arguments.
 
+### Glob patterns in `symlinkDirectories`
+
+Items in `symlinkDirectories` can be literal paths or glob patterns. Anything containing `*`, `?`, `[`, `]`, `{`, or `}` is treated as a glob.
+
+```json
+{
+  "symlinkDirectories": ["node_modules", ".env*", "config/*.json"]
+}
+```
+
+Patterns resolve relative to each repo's root. Dotfiles are included by default, so `.env*` matches `.env`, `.env.local`, `.env.development`, etc. `**` is supported for recursion.
+
 ## FAQ
 
 **How do I create a config without hand-writing JSON?**
@@ -176,9 +189,12 @@ Not yet. macOS and Linux only. PRs welcome.
 **Does it send anything over the network?**
 No. `wtmux` is a local tool — no telemetry, no updates checks, no API calls.
 
+**What happens if I run `wtmux` with no name?**
+It generates a random, memorable name like `wt/brave-penguin` and creates coordinated worktrees on that branch. The generated name is printed to stderr so you can find it later via `wtmux rm wt/brave-penguin`.
+
 ## Status
 
-v0.2.0 — stable for personal use.
+v0.3.0 — stable for personal use.
 
 Exit codes follow Unix conventions: `0` success, `1` user error, `2` precondition failure, `3` internal error.
 
