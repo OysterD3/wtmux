@@ -9,9 +9,9 @@ export const createCommand = defineCommand({
   meta: { name: "wtmux", description: "Create coordinated worktrees and launch claude" },
   args: {
     name: { type: "positional", required: false, description: "Worktree/branch name" },
-    config: { type: "string", description: "Path to config file" },
-    group: { type: "string", description: "Group name override" },
-    "dry-run": { type: "boolean", description: "Plan without mutating" },
+    config: { type: "string", alias: "c", description: "Path to config file" },
+    group: { type: "string", alias: "g", description: "Group name override" },
+    "dry-run": { type: "boolean", alias: "n", description: "Plan without mutating" },
     // NOTE: citty's parser treats --no-X as negating flag X, so we declare
     // "launch" with default:true and the user passes --no-launch to set it false.
     launch: { type: "boolean", default: true, description: "Launch after creating (use --no-launch to skip)" },

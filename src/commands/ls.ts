@@ -8,8 +8,8 @@ import type { Config } from "../config/schema.js";
 export const lsCommand = defineCommand({
   meta: { name: "ls", description: "List coordinated worktrees in the current group" },
   args: {
-    config: { type: "string" },
-    group: { type: "string" },
+    config: { type: "string", alias: "c" },
+    group: { type: "string", alias: "g" },
     verbose: { type: "boolean", alias: "v" },
   },
   async run({ args }) {

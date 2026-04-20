@@ -9,10 +9,10 @@ export const rmCommand = defineCommand({
   meta: { name: "rm", description: "Remove coordinated worktrees" },
   args: {
     name: { type: "positional", required: true },
-    config: { type: "string" },
-    group: { type: "string" },
-    "dry-run": { type: "boolean", description: "Plan without mutating" },
-    force: { type: "boolean", description: "Skip dirty/stash/unpushed guards" },
+    config: { type: "string", alias: "c" },
+    group: { type: "string", alias: "g" },
+    "dry-run": { type: "boolean", alias: "n", description: "Plan without mutating" },
+    force: { type: "boolean", alias: "f", description: "Skip dirty/stash/unpushed guards" },
     verbose: { type: "boolean", alias: "v" },
   },
   async run({ args }) {

@@ -5,7 +5,7 @@ import { setVerbose } from "../log.js";
 export const configCommand = defineCommand({
   meta: { name: "config", description: "Interactively edit wtmux config" },
   args: {
-    config: { type: "string", description: "Path to config file" },
+    config: { type: "string", alias: "c", description: "Path to config file" },
     verbose: { type: "boolean", alias: "v" },
   },
   async run({ args }) {
