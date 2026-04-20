@@ -1,27 +1,28 @@
 import { spawnSync } from "node:child_process";
-import path from "node:path";
-
-export function isClaudeCommand(argv0: string): boolean {
-  return path.basename(argv0) === "claude";
-}
+import { expandAddDirArgs, type ResolvedStrategy } from "./agents.js";
 
 export interface BuildLaunchArgvInput {
   launchCommand: readonly string[];
   siblingWorktrees: readonly string[];
+  strategy: ResolvedStrategy;
   extraArgs?: readonly string[];
 }
 
 export function buildLaunchArgv(input: BuildLaunchArgvInput): string[] {
-  const { launchCommand, siblingWorktrees, extraArgs = [] } = input;
-  const base = [...launchCommand];
-  const siblingArgs: string[] = [];
-  const cmd = launchCommand[0];
-  if (cmd !== undefined && isClaudeCommand(cmd)) {
-    for (const p of siblingWorktrees) siblingArgs.push("--add-dir", p);
-  } else {
-    for (const p of siblingWorktrees) siblingArgs.push(p);
+  const { launchCommand, siblingWorktrees, strategy, extraArgs = [] } = input;
+
+  if (strategy.kind === "none") {
+    throw new Error(
+      `buildLaunchArgv called with "none" strategy (agent: ${strategy.agentId}); callers must short-circuit the launch`,
+    );
   }
-  return [...base, ...siblingArgs, ...extraArgs];
+
+  const siblingArgs =
+    strategy.kind === "flag"
+      ? expandAddDirArgs(strategy.args, siblingWorktrees)
+      : [...siblingWorktrees];
+
+  return [...launchCommand, ...siblingArgs, ...extraArgs];
 }
 
 export interface ExecLaunchInput {

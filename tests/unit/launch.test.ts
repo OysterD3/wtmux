@@ -1,91 +1,97 @@
 import { describe, expect, it } from "vitest";
-import { buildLaunchArgv, isClaudeCommand } from "../../src/launch.js";
+import { buildLaunchArgv } from "../../src/launch.js";
+import type { ResolvedStrategy } from "../../src/agents.js";
 
 describe("buildLaunchArgv", () => {
-  it("appends --add-dir per sibling when launchCommand is claude", () => {
+  it("injects flag-strategy args per sibling", () => {
+    const strategy: ResolvedStrategy = {
+      kind: "flag",
+      args: ["--add-dir", "{path}"],
+      source: "basename",
+    };
     const argv = buildLaunchArgv({
       launchCommand: ["claude"],
       siblingWorktrees: ["/x/wt-a", "/x/wt-b"],
+      strategy,
     });
     expect(argv).toEqual(["claude", "--add-dir", "/x/wt-a", "--add-dir", "/x/wt-b"]);
   });
 
-  it("appends siblings positionally when launchCommand is not claude", () => {
+  it("supports single-token templates (--dir={path})", () => {
+    const strategy: ResolvedStrategy = {
+      kind: "flag",
+      args: ["--dir={path}"],
+      source: "addDirArgs",
+    };
+    const argv = buildLaunchArgv({
+      launchCommand: ["mytool"],
+      siblingWorktrees: ["/x/wt-a"],
+      strategy,
+    });
+    expect(argv).toEqual(["mytool", "--dir=/x/wt-a"]);
+  });
+
+  it("appends siblings positionally for positional-fallback strategy", () => {
+    const strategy: ResolvedStrategy = { kind: "positional", source: "fallback" };
     const argv = buildLaunchArgv({
       launchCommand: ["code", "."],
       siblingWorktrees: ["/x/wt-a"],
+      strategy,
     });
     expect(argv).toEqual(["code", ".", "/x/wt-a"]);
   });
 
-  it("forwards extra args between wrapper and launch", () => {
+  it("forwards extraArgs after the injected sibling args", () => {
+    const strategy: ResolvedStrategy = {
+      kind: "flag",
+      args: ["--add-dir", "{path}"],
+      source: "basename",
+    };
     const argv = buildLaunchArgv({
       launchCommand: ["claude"],
       siblingWorktrees: ["/x/wt-a"],
+      strategy,
       extraArgs: ["--verbose"],
     });
     expect(argv).toEqual(["claude", "--add-dir", "/x/wt-a", "--verbose"]);
   });
 
-  it("does not append anything when there are no siblings (single-repo fallback)", () => {
+  it("returns launchCommand unchanged when siblings is empty (flag)", () => {
+    const strategy: ResolvedStrategy = {
+      kind: "flag",
+      args: ["--add-dir", "{path}"],
+      source: "basename",
+    };
     const argv = buildLaunchArgv({
       launchCommand: ["claude"],
       siblingWorktrees: [],
+      strategy,
     });
     expect(argv).toEqual(["claude"]);
   });
 
-  it("injects --add-dir when launchCommand is an absolute path to claude", () => {
+  it("returns launchCommand unchanged when siblings is empty (positional)", () => {
+    const strategy: ResolvedStrategy = { kind: "positional", source: "fallback" };
     const argv = buildLaunchArgv({
-      launchCommand: ["/usr/local/bin/claude"],
-      siblingWorktrees: ["/x/wt-a"],
+      launchCommand: ["my-tool"],
+      siblingWorktrees: [],
+      strategy,
     });
-    expect(argv).toEqual(["/usr/local/bin/claude", "--add-dir", "/x/wt-a"]);
+    expect(argv).toEqual(["my-tool"]);
   });
 
-  it("injects --add-dir when launchCommand uses a home-relative claude path", () => {
-    const argv = buildLaunchArgv({
-      launchCommand: ["~/.local/bin/claude"],
-      siblingWorktrees: ["/x/wt-a"],
-    });
-    expect(argv).toEqual(["~/.local/bin/claude", "--add-dir", "/x/wt-a"]);
-  });
-
-  it("does not inject --add-dir for claude-code (different tool)", () => {
-    const argv = buildLaunchArgv({
-      launchCommand: ["claude-code"],
-      siblingWorktrees: ["/x/wt-a"],
-    });
-    expect(argv).toEqual(["claude-code", "/x/wt-a"]);
-  });
-
-  it("does not inject --add-dir for fakeclaude", () => {
-    const argv = buildLaunchArgv({
-      launchCommand: ["fakeclaude"],
-      siblingWorktrees: ["/x/wt-a"],
-    });
-    expect(argv).toEqual(["fakeclaude", "/x/wt-a"]);
-  });
-});
-
-describe("isClaudeCommand", () => {
-  it("matches bare claude", () => {
-    expect(isClaudeCommand("claude")).toBe(true);
-  });
-
-  it("matches an absolute path whose basename is claude", () => {
-    expect(isClaudeCommand("/usr/local/bin/claude")).toBe(true);
-  });
-
-  it("rejects claude-code", () => {
-    expect(isClaudeCommand("claude-code")).toBe(false);
-  });
-
-  it("rejects an absolute path ending in claude-dev", () => {
-    expect(isClaudeCommand("/opt/bin/claude-dev")).toBe(false);
-  });
-
-  it("rejects a non-claude command", () => {
-    expect(isClaudeCommand("code")).toBe(false);
+  it("throws when called with a `none` strategy (caller must short-circuit)", () => {
+    const strategy: ResolvedStrategy = {
+      kind: "none",
+      source: "basename",
+      agentId: "opencode",
+    };
+    expect(() =>
+      buildLaunchArgv({
+        launchCommand: ["opencode"],
+        siblingWorktrees: ["/x/wt"],
+        strategy,
+      }),
+    ).toThrow();
   });
 });
