@@ -231,7 +231,7 @@ async function createGroup(
 
     if (strategy.kind === "none") {
       info(`${strategy.agentId} has no multi-root support. Worktrees ready:`);
-      for (const p of [primaryWt, ...siblings]) info(`  - ${p}`);
+      for (const p of [primaryWt, ...siblings]) process.stderr.write(`  - ${p}\n`);
     } else {
       const argv = buildLaunchArgv({
         launchCommand,
