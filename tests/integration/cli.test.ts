@@ -114,4 +114,46 @@ describe("cli", () => {
     expect(result.stderr).toMatch(/\[wtmux\]/);
     expect(result.stderr).toMatch(/nonexistent/);
   });
+
+  it("creates a random wt/<adj>-<noun> worktree when no positional is given", async () => {
+    const a = await tmp();
+    const b = await tmp();
+    await initRepo(a);
+    await initRepo(b);
+    const ra = await fs.realpath(a);
+    const rb = await fs.realpath(b);
+    await fs.writeFile(
+      path.join(ra, ".wtmux.json"),
+      JSON.stringify({ groups: [{ name: "g", repos: [ra, rb] }] }, null, 2),
+    );
+
+    const result = await execa("node", [BIN, "--no-launch"], { cwd: ra, reject: false });
+    expect(result.exitCode).toBe(0);
+
+    const entries = await fs.readdir(path.join(ra, ".worktrees", "wt"));
+    expect(entries.length).toBeGreaterThan(0);
+    expect(entries[0]!).toMatch(/^[a-z]+-[a-z]+$/);
+  });
+
+  it("creates a worktree from the --base branch via short-form flag", async () => {
+    const a = await tmp();
+    const b = await tmp();
+    await initRepo(a);
+    await initRepo(b);
+    const ra = await fs.realpath(a);
+    const rb = await fs.realpath(b);
+    await fs.writeFile(
+      path.join(ra, ".wtmux.json"),
+      JSON.stringify({ groups: [{ name: "g", repos: [ra, rb] }] }, null, 2),
+    );
+    await execa("git", ["-C", ra, "checkout", "-b", "other"]);
+    await execa("git", ["-C", rb, "checkout", "-b", "other"]);
+
+    const result = await execa("node", [BIN, "feat/short-base", "-b", "main", "--no-launch"], {
+      cwd: ra,
+      reject: false,
+    });
+    expect(result.exitCode).toBe(0);
+    expect((await fs.stat(path.join(ra, ".worktrees/feat/short-base"))).isDirectory()).toBe(true);
+  });
 });
