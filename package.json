@@ -1,6 +1,6 @@
 {
   "name": "wtmux",
-  "version": "0.3.0-dev",
+  "version": "0.3.0",
   "description": "Coordinated git worktrees across sibling repos with symlink replication and one-shot Claude Code launch.",
   "license": "MIT",
   "author": "Oyster Lee <oysterd3@gmail.com>",
