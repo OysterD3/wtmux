@@ -13,6 +13,7 @@ import { removeSymlinks, replicateSymlinks } from "../symlinks.js";
 import { buildLaunchArgv, execLaunch } from "../launch.js";
 import type { Config } from "../config/schema.js";
 import { generateWithRetry } from "../random-name.js";
+import { expandSymlinkItems } from "../glob.js";
 
 export interface CreateFlowInput {
   name: string | undefined;
@@ -107,7 +108,8 @@ async function createSingleRepo(repo: string, input: CreateFlowInput): Promise<C
   });
 
   const items = input.config.symlinkDirectories;
-  await replicateSymlinks({ repo, wt: wtPath, items });
+  const expandedItems = await expandSymlinkItems(repo, items);
+  await replicateSymlinks({ repo, wt: wtPath, items: expandedItems });
 
   if (!input.noLaunch) {
     const argv = buildLaunchArgv({
@@ -171,6 +173,11 @@ async function createGroup(
     }
   }
 
+  const expandedByRepo = new Map<string, readonly string[]>();
+  for (const { path: repo } of plan.repos) {
+    expandedByRepo.set(repo, await expandSymlinkItems(repo, items));
+  }
+
   const placed: { repo: string; wtPath: string; items: string[] }[] = [];
   try {
     for (const { path: repo, wtPath } of plan.repos) {
@@ -181,7 +188,8 @@ async function createGroup(
         base,
         createBranch: !exists,
       });
-      const results = await replicateSymlinks({ repo, wt: wtPath, items });
+      const repoItems = expandedByRepo.get(repo) ?? [];
+      const results = await replicateSymlinks({ repo, wt: wtPath, items: repoItems });
       placed.push({
         repo,
         wtPath,

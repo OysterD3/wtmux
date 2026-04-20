@@ -213,6 +213,33 @@ describe("createFlow", () => {
     expect((await fs.stat(wtA)).isDirectory()).toBe(true);
   });
 
+  it("expands glob patterns in symlinkDirectories", async () => {
+    const { cfg, a, b } = await setupGroup();
+    await fs.writeFile(path.join(a, ".env.local"), "LOCAL=1");
+    await fs.writeFile(path.join(a, ".env.development"), "DEV=1");
+
+    const cfgWithGlob = { ...cfg, symlinkDirectories: ["node_modules", ".env*"] };
+
+    await createFlow({
+      name: "feat/glob",
+      cwd: a,
+      config: cfgWithGlob,
+      groupFlag: undefined,
+      dryRun: false,
+      noLaunch: true,
+      extraArgs: [],
+      baseOverride: undefined,
+    });
+
+    const wtA = path.join(a, ".worktrees/feat/glob");
+    expect((await fs.lstat(path.join(wtA, ".env"))).isSymbolicLink()).toBe(true);
+    expect((await fs.lstat(path.join(wtA, ".env.local"))).isSymbolicLink()).toBe(true);
+    expect((await fs.lstat(path.join(wtA, ".env.development"))).isSymbolicLink()).toBe(true);
+
+    const wtB = path.join(b, ".worktrees/feat/glob");
+    await expect(fs.lstat(path.join(wtB, ".env.local"))).rejects.toThrow();
+  });
+
   it("generates a random name when no name is provided", async () => {
     const { cfg, a, b } = await setupGroup();
     const result = await createFlow({
