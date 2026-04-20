@@ -60,3 +60,16 @@ export function resolveStrategy(input: ResolveStrategyInput): ResolvedStrategy {
 
   return { kind: "positional", source: "fallback" };
 }
+
+export function expandAddDirArgs(
+  template: readonly string[],
+  siblings: readonly string[],
+): string[] {
+  const out: string[] = [];
+  for (const sibling of siblings) {
+    for (const token of template) {
+      out.push(token.replaceAll("{path}", sibling));
+    }
+  }
+  return out;
+}

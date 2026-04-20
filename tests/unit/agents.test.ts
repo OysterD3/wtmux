@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AGENT_REGISTRY, BASENAME_ALIAS, resolveStrategy, type AgentId, type ResolvedStrategy } from "../../src/agents.js";
+import { AGENT_REGISTRY, BASENAME_ALIAS, resolveStrategy, expandAddDirArgs, type AgentId, type ResolvedStrategy } from "../../src/agents.js";
 
 describe("AGENT_REGISTRY", () => {
   it("contains exactly the six built-in agents", () => {
@@ -109,5 +109,31 @@ describe("resolveStrategy", () => {
     const got = resolveStrategy({ launchCommand: ["claude-code"] });
     expect(got.source).toBe("fallback");
     expect(got.kind).toBe("positional");
+  });
+});
+
+describe("expandAddDirArgs", () => {
+  it("expands a two-token template per sibling", () => {
+    const got = expandAddDirArgs(["--add-dir", "{path}"], ["/a/wt", "/b/wt"]);
+    expect(got).toEqual(["--add-dir", "/a/wt", "--add-dir", "/b/wt"]);
+  });
+
+  it("expands single-token templates with embedded {path}", () => {
+    const got = expandAddDirArgs(["--dir={path}"], ["/a/wt", "/b/wt"]);
+    expect(got).toEqual(["--dir=/a/wt", "--dir=/b/wt"]);
+  });
+
+  it("replaces multiple {path} occurrences per entry", () => {
+    const got = expandAddDirArgs(["{path}:{path}"], ["/a/wt"]);
+    expect(got).toEqual(["/a/wt:/a/wt"]);
+  });
+
+  it("returns an empty array when siblings is empty", () => {
+    expect(expandAddDirArgs(["--add-dir", "{path}"], [])).toEqual([]);
+  });
+
+  it("leaves entries without {path} unchanged (passed per sibling)", () => {
+    const got = expandAddDirArgs(["--flag", "{path}", "--after"], ["/a", "/b"]);
+    expect(got).toEqual(["--flag", "/a", "--after", "--flag", "/b", "--after"]);
   });
 });
