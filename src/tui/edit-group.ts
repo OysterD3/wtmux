@@ -19,6 +19,7 @@ import {
   validateWorktreePattern,
 } from "./prompts.js";
 import type { Config } from "../config/schema.js";
+import type { AgentId } from "../agents.js";
 
 export async function editGroupWizard(config: Config, cwd: string): Promise<Config | null> {
   if (config.groups.length === 0) {
@@ -159,7 +160,7 @@ export async function editGroupWizard(config: Config, cwd: string): Promise<Conf
         }
         // Built-in agent selected.
         current = updateGroup(current, activeName, {
-          agent: choice as "claude" | "codex" | "cursor" | "code" | "opencode" | "qoder",
+          agent: choice as AgentId,
           addDirArgs: undefined,
         });
         break;

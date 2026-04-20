@@ -9,6 +9,7 @@ import {
   validateWorktreePattern,
 } from "./prompts.js";
 import type { Config, Group } from "../config/schema.js";
+import type { AgentId } from "../agents.js";
 
 export async function createGroupWizard(config: Config, cwd: string): Promise<Config | null> {
   const existingNames = config.groups.map((g) => g.name);
@@ -147,7 +148,7 @@ async function collectOverrides(config: Config, groupName: string): Promise<Conf
   if (pattern.trim().length > 0) patch.worktreePathPattern = pattern.trim();
   if (launch.trim().length > 0) patch.launchCommand = parseLaunchCommand(launch);
   if (agentChoice !== "__unset__" && agentChoice !== "__custom__") {
-    patch.agent = agentChoice as "claude" | "codex" | "cursor" | "code" | "opencode" | "qoder";
+    patch.agent = agentChoice as AgentId;
   }
   if (addDirArgsPatch) patch.addDirArgs = addDirArgsPatch;
 
