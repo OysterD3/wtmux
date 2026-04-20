@@ -40,16 +40,6 @@ npm install -g wtmux
 yarn global add wtmux
 ```
 
-From source:
-
-```bash
-git clone https://github.com/OysterD3/wtmux.git
-cd wtmux
-pnpm install
-pnpm build
-pnpm link --global
-```
-
 Requirements: **Node.js 20+** and **git**.
 
 ## Quick start
@@ -203,42 +193,47 @@ Patterns resolve relative to each repo's root. Dotfiles are included by default,
 
 ## FAQ
 
-**How do I create a config without hand-writing JSON?**
-Run `wtmux config` from anywhere. It auto-detects sibling git repos in the parent directory and walks you through creating a group.
+1. **How do I create a config without hand-writing JSON?**
 
-**Which AI agents does wtmux support out of the box?**
-`claude`, `codex`, `cursor`, `code`, `opencode`, `qoder`. For anything else, set `addDirArgs` in config — see *Agents & sibling injection* above.
+   Run `wtmux config` from anywhere. It auto-detects sibling git repos in the parent directory and walks you through creating a group.
 
-**Can I use it with only one repo?**
-Yes. Run `wtmux <name>` from inside any git repo that isn't in a configured group — you get single-repo worktree creation + symlinks + agent launch, no siblings.
+2. **Which AI agents does wtmux support out of the box?**
 
-**What happens if the worktrees already exist?**
-`wtmux` refuses to create over existing worktrees. Use `wtmux rm <name>` first, or pick a different name.
+   `claude`, `codex`, `cursor`, `code`, `opencode`, `qoder`. For anything else, set `addDirArgs` in config — see *Agents & sibling injection* above.
 
-**How do I remove a worktree with uncommitted work?**
-Commit, stash, or push first — or pass `--force`. `wtmux rm` intentionally refuses to silently discard work.
+3. **Can I use it with only one repo?**
 
-**What's the difference from `git worktree add`?**
-`wtmux` coordinates the same worktree across multiple repos, replicates symlinks into each, and launches your agent with siblings attached — in one command. Plain `git worktree add` handles one repo at a time and doesn't touch symlinks or your agent.
+   Yes. Run `wtmux <name>` from inside any git repo that isn't in a configured group — you get single-repo worktree creation + symlinks + agent launch, no siblings.
 
-**Does it support Windows?**
-Not yet. macOS and Linux only. PRs welcome.
+4. **What happens if the worktrees already exist?**
 
-**Does it send anything over the network?**
-No. `wtmux` is a local tool — no telemetry, no update checks, no API calls.
+   `wtmux` refuses to create over existing worktrees. Use `wtmux rm <name>` first, or pick a different name.
 
-**What happens if I run `wtmux` with no name?**
-It generates a random, memorable name like `wt/brave-penguin` and creates coordinated worktrees on that branch. The generated name is printed to stderr so you can find it later via `wtmux rm wt/brave-penguin`.
+5. **How do I remove a worktree with uncommitted work?**
+
+   Commit, stash, or push first — or pass `--force`. `wtmux rm` intentionally refuses to silently discard work.
+
+6. **What's the difference from `git worktree add`?**
+
+   `wtmux` coordinates the same worktree across multiple repos, replicates symlinks into each, and launches your agent with siblings attached — in one command. Plain `git worktree add` handles one repo at a time and doesn't touch symlinks or your agent.
+
+7. **Does it support Windows?**
+
+   Not yet. macOS and Linux only. PRs welcome.
+
+8. **Does it send anything over the network?**
+
+   No. `wtmux` is a local tool — no telemetry, no update checks, no API calls.
+
+9. **What happens if I run `wtmux` with no name?**
+
+   It generates a random, memorable name like `wt/brave-penguin` and creates coordinated worktrees on that branch. The generated name is printed to stderr so you can find it later via `wtmux rm wt/brave-penguin`.
 
 ## Status
 
 v0.4.0 — stable for personal use.
 
 Exit codes follow Unix conventions: `0` success, `1` user error, `2` precondition failure, `3` internal error.
-
-## Contributing
-
-Bug reports and PRs welcome at [github.com/OysterD3/wtmux](https://github.com/OysterD3/wtmux). The test suite uses real git repos in tmpdirs — `pnpm test` runs ~170 tests in a few seconds.
 
 ## License
 
