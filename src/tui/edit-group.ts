@@ -49,6 +49,7 @@ export async function editGroupWizard(config: Config, cwd: string): Promise<Conf
         { value: "symlinks", label: "Override symlinkDirectories" },
         { value: "pattern", label: "Override worktreePathPattern" },
         { value: "launch", label: "Override launchCommand" },
+        { value: "agent", label: "Override agent (sibling-injection strategy)" },
         { value: "back", label: "← Back to main menu" },
       ],
     });
@@ -117,6 +118,50 @@ export async function editGroupWizard(config: Config, cwd: string): Promise<Conf
             ? { launchCommand: parseLaunchCommand(input as string) }
             : { launchCommand: undefined };
         current = updateGroup(current, activeName, patch);
+        break;
+      }
+      case "agent": {
+        const group = current.groups.find((g) => g.name === activeName)!;
+        const choice = await p.select({
+          message: "Agent (sibling-injection strategy)",
+          options: [
+            { value: "__unset__", label: "auto-detect (from launchCommand)" },
+            { value: "claude", label: "claude" },
+            { value: "codex", label: "codex" },
+            { value: "cursor", label: "cursor" },
+            { value: "code", label: "code" },
+            { value: "opencode", label: "opencode (no multi-root)" },
+            { value: "qoder", label: "qoder (no multi-root)" },
+            { value: "__custom__", label: "custom (configure addDirArgs)" },
+          ],
+          initialValue: group.agent ?? (group.addDirArgs ? "__custom__" : "__unset__"),
+        });
+        if (p.isCancel(choice)) break;
+
+        if (choice === "__unset__") {
+          current = updateGroup(current, activeName, { agent: undefined, addDirArgs: undefined });
+          break;
+        }
+        if (choice === "__custom__") {
+          const input = await p.text({
+            message: "addDirArgs template (space-separated, use {path} for sibling)",
+            placeholder: "--add-dir {path}",
+            initialValue: group.addDirArgs ? group.addDirArgs.join(" ") : "--add-dir {path}",
+            validate: (v) => (v.includes("{path}") ? undefined : "must contain {path}"),
+          });
+          if (p.isCancel(input)) break;
+          const tokens = (input as string).trim().split(/\s+/).filter((t) => t.length > 0);
+          current = updateGroup(current, activeName, {
+            agent: undefined,
+            addDirArgs: tokens,
+          });
+          break;
+        }
+        // Built-in agent selected.
+        current = updateGroup(current, activeName, {
+          agent: choice as "claude" | "codex" | "cursor" | "code" | "opencode" | "qoder",
+          addDirArgs: undefined,
+        });
         break;
       }
     }

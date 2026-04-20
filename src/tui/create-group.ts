@@ -114,10 +114,42 @@ async function collectOverrides(config: Config, groupName: string): Promise<Conf
   });
   if (p.isCancel(launch)) return config;
 
+  const agentChoice = await p.select({
+    message: "Agent (sibling-injection strategy, optional)",
+    options: [
+      { value: "__unset__", label: "auto-detect (from launchCommand)" },
+      { value: "claude", label: "claude" },
+      { value: "codex", label: "codex" },
+      { value: "cursor", label: "cursor" },
+      { value: "code", label: "code" },
+      { value: "opencode", label: "opencode (no multi-root)" },
+      { value: "qoder", label: "qoder (no multi-root)" },
+      { value: "__custom__", label: "custom (configure addDirArgs)" },
+    ],
+    initialValue: "__unset__",
+  });
+  if (p.isCancel(agentChoice)) return config;
+
+  let addDirArgsPatch: string[] | undefined;
+  if (agentChoice === "__custom__") {
+    const input = await p.text({
+      message: "addDirArgs template (space-separated, use {path} for sibling)",
+      placeholder: "--add-dir {path}",
+      initialValue: "--add-dir {path}",
+      validate: (v) => (v.includes("{path}") ? undefined : "must contain {path}"),
+    });
+    if (p.isCancel(input)) return config;
+    addDirArgsPatch = (input as string).trim().split(/\s+/).filter((t) => t.length > 0);
+  }
+
   const patch: Partial<Group> = {};
   if (symlinks.trim().length > 0) patch.symlinkDirectories = parseCommaList(symlinks);
   if (pattern.trim().length > 0) patch.worktreePathPattern = pattern.trim();
   if (launch.trim().length > 0) patch.launchCommand = parseLaunchCommand(launch);
+  if (agentChoice !== "__unset__" && agentChoice !== "__custom__") {
+    patch.agent = agentChoice as "claude" | "codex" | "cursor" | "code" | "opencode" | "qoder";
+  }
+  if (addDirArgsPatch) patch.addDirArgs = addDirArgsPatch;
 
   return Object.keys(patch).length > 0 ? updateGroup(config, groupName, patch) : config;
 }
