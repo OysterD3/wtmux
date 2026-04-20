@@ -12,6 +12,7 @@ export const createCommand = defineCommand({
     config: { type: "string", alias: "c", description: "Path to config file" },
     group: { type: "string", alias: "g", description: "Group name override" },
     "dry-run": { type: "boolean", alias: "n", description: "Plan without mutating" },
+    base: { type: "string", alias: "b", description: "Override base branch" },
     // NOTE: citty's parser treats --no-X as negating flag X, so we declare
     // "launch" with default:true and the user passes --no-launch to set it false.
     launch: { type: "boolean", default: true, description: "Launch after creating (use --no-launch to skip)" },
@@ -39,6 +40,7 @@ export const createCommand = defineCommand({
       dryRun: Boolean(args["dry-run"]),
       noLaunch: !args.launch,
       extraArgs,
+      baseOverride: args.base,
     });
   },
 });

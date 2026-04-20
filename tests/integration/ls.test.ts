@@ -46,6 +46,7 @@ describe("lsFlow", () => {
       dryRun: false,
       noLaunch: true,
       extraArgs: [],
+      baseOverride: undefined,
     });
 
     const rows = await lsFlow({ cwd: a, config: cfg, groupFlag: undefined });

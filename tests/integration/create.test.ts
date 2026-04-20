@@ -47,6 +47,7 @@ describe("createFlow", () => {
       dryRun: false,
       noLaunch: true,
       extraArgs: [],
+      baseOverride: undefined,
     });
 
     expect(result.kind).toBe("group");
@@ -75,6 +76,7 @@ describe("createFlow", () => {
       dryRun: true,
       noLaunch: true,
       extraArgs: [],
+      baseOverride: undefined,
     });
     await expect(fs.stat(path.join(a, ".worktrees/feat/dry"))).rejects.toThrow();
     await expect(fs.stat(path.join(b, ".worktrees/feat/dry"))).rejects.toThrow();
@@ -93,6 +95,7 @@ describe("createFlow", () => {
         dryRun: false,
         noLaunch: true,
         extraArgs: [],
+        baseOverride: undefined,
       }),
     ).rejects.toThrow(/detached/i);
   });
@@ -112,6 +115,7 @@ describe("createFlow", () => {
         dryRun: false,
         noLaunch: true,
         extraArgs: [],
+        baseOverride: undefined,
       }),
     ).rejects.toThrow();
 
@@ -135,6 +139,7 @@ describe("createFlow", () => {
         dryRun: false,
         noLaunch: true,
         extraArgs: [],
+        baseOverride: undefined,
       }),
     ).rejects.toThrow();
 
@@ -146,5 +151,65 @@ describe("createFlow", () => {
     // Also verify repo B has nothing — the blocker file is still there but no worktree.
     const bStat = await fs.lstat(path.join(b, ".worktrees"));
     expect(bStat.isFile()).toBe(true); // still the blocker file we put down
+  });
+
+  it("uses --base branch when passed, even if current branch differs", async () => {
+    const { execa } = await import("execa");
+    const { cfg, a, b } = await setupGroup();
+    await execa("git", ["-C", a, "checkout", "-b", "other"]);
+    await execa("git", ["-C", b, "checkout", "-b", "other"]);
+
+    await createFlow({
+      name: "feat/base-test",
+      cwd: a,
+      config: cfg,
+      groupFlag: undefined,
+      dryRun: false,
+      noLaunch: true,
+      extraArgs: [],
+      baseOverride: "main",
+    });
+
+    const wtA = path.join(a, ".worktrees/feat/base-test");
+    const parent = (await execa("git", ["-C", wtA, "rev-parse", "main"])).stdout.trim();
+    const head = (await execa("git", ["-C", wtA, "rev-parse", "HEAD"])).stdout.trim();
+    expect(head).toBe(parent);
+  });
+
+  it("rejects --base pointing at a non-existent branch", async () => {
+    const { cfg, a } = await setupGroup();
+    await expect(
+      createFlow({
+        name: "feat/missing-base",
+        cwd: a,
+        config: cfg,
+        groupFlag: undefined,
+        dryRun: false,
+        noLaunch: true,
+        extraArgs: [],
+        baseOverride: "does-not-exist",
+      }),
+    ).rejects.toThrow(/does-not-exist/);
+  });
+
+  it("allows --base on detached HEAD (overrides the detached-HEAD precondition)", async () => {
+    const { execa } = await import("execa");
+    const { cfg, a } = await setupGroup();
+    const sha = (await execa("git", ["-C", a, "rev-parse", "HEAD"])).stdout.trim();
+    await execa("git", ["-C", a, "checkout", sha]);
+
+    await createFlow({
+      name: "feat/detached-ok",
+      cwd: a,
+      config: cfg,
+      groupFlag: undefined,
+      dryRun: false,
+      noLaunch: true,
+      extraArgs: [],
+      baseOverride: "main",
+    });
+
+    const wtA = path.join(a, ".worktrees/feat/detached-ok");
+    expect((await fs.stat(wtA)).isDirectory()).toBe(true);
   });
 });

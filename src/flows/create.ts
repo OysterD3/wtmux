@@ -1,6 +1,6 @@
 import { WtmuxError } from "../errors.js";
 import { expandWorktreePath } from "../paths.js";
-import { debug, info } from "../log.js";
+import { debug, info, warn } from "../log.js";
 import { resolveGroup, type GroupResolution } from "../group.js";
 import { preflightCreate } from "../preflight.js";
 import {
@@ -21,6 +21,7 @@ export interface CreateFlowInput {
   dryRun: boolean;
   noLaunch: boolean;
   extraArgs: readonly string[];
+  baseOverride: string | undefined;
 }
 
 export type CreateFlowResult =
@@ -49,10 +50,10 @@ export async function createFlow(input: CreateFlowInput): Promise<CreateFlowResu
 }
 
 async function createSingleRepo(repo: string, input: CreateFlowInput): Promise<CreateFlowResult> {
-  const base = await getCurrentBranch(repo);
+  const base = input.baseOverride ?? (await getCurrentBranch(repo));
   if (!base) {
     throw new WtmuxError(
-      `${repo}: detached HEAD — check out a branch before creating a worktree`,
+      `${repo}: detached HEAD — check out a branch before creating a worktree, or pass --base`,
       "precondition",
     );
   }
@@ -67,6 +68,13 @@ async function createSingleRepo(repo: string, input: CreateFlowInput): Promise<C
 
   const pre = await preflightCreate(plan);
   if (!pre.ok) throw new WtmuxError(pre.errors.join("\n"), "user");
+
+  if (input.baseOverride) {
+    const exists = await branchExists(repo, input.name);
+    if (exists) {
+      warn(`--base "${input.baseOverride}" ignored: branch "${input.name}" already exists`);
+    }
+  }
 
   const exists = await branchExists(repo, input.name);
   await worktreeAdd(repo, {
@@ -96,10 +104,10 @@ async function createGroup(
   input: CreateFlowInput,
 ): Promise<CreateFlowResult> {
   const primary = resolved.primary;
-  const base = await getCurrentBranch(primary);
+  const base = input.baseOverride ?? (await getCurrentBranch(primary));
   if (!base) {
     throw new WtmuxError(
-      `${primary}: detached HEAD — check out a branch before creating a worktree`,
+      `${primary}: detached HEAD — check out a branch before creating a worktree, or pass --base`,
       "precondition",
     );
   }
@@ -130,6 +138,15 @@ async function createGroup(
 
   const pre = await preflightCreate(plan);
   if (!pre.ok) throw new WtmuxError(pre.errors.join("\n"), "user");
+
+  if (input.baseOverride) {
+    const existing = await Promise.all(
+      plan.repos.map((r) => branchExists(r.path, input.name)),
+    );
+    if (existing.some((e) => e)) {
+      warn(`--base "${input.baseOverride}" ignored: branch "${input.name}" already exists`);
+    }
+  }
 
   const placed: { repo: string; wtPath: string; items: string[] }[] = [];
   try {

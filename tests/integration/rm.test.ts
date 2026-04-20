@@ -46,6 +46,7 @@ async function createPair(name: string, cfg: Config, cwd: string) {
     dryRun: false,
     noLaunch: true,
     extraArgs: [],
+    baseOverride: undefined,
   });
 }
 
