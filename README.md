@@ -1,33 +1,33 @@
-# wtmux — coordinated git worktrees for Claude Code and multi-repo monorepos
+# wtmux — coordinated git worktrees for AI coding agents
 
-**One command, one branch name, every sibling repo in sync — and Claude Code launches with all of them wired up.**
+**One command, one branch name, every sibling repo in sync — and your AI agent launches with all of them attached.**
 
-`wtmux` creates matching git worktrees across every repo you care about, symlinks `node_modules` / `.env` / whatever else you need, then launches [Claude Code](https://claude.com/claude-code) (or your editor of choice) with the siblings already mounted as `--add-dir` paths.
+`wtmux` creates matching git worktrees across every repo you care about, symlinks `node_modules` / `.env` / whatever else you need, then launches your AI agent (Claude Code, Codex, Cursor, OpenCode, Qoder, or any other CLI) with the sibling repos already attached.
 
-If you've ever run Claude Code on an API repo with a frontend `--add-dir`'d in, checked out a feature branch, and realized the frontend is still on `main` — this is the fix.
+If you've ever run an AI agent on an API repo with the frontend repo attached, checked out a feature branch, and realized the frontend is still on `main` — this is the fix.
 
 ---
 
 ## Why wtmux
 
-Claude Code's native `/worktree` command creates a worktree for the primary working directory **only**. Any repo you added with `--add-dir` stays on whatever branch it was on. You end up working on an isolated feature branch in one repo while the other is stale.
+AI coding agents can work across multiple repos in one session — Claude Code's `--add-dir`, Codex's `--add-dir`, Cursor's `--add`, and so on. But git worktrees are per-repo: when you branch off in the primary, the attached repos stay on their old branches. You end up coding against a feature branch in one repo and a stale `main` in the others.
 
-Claude Code has no hook or config to rewrite `--add-dir` paths mid-session, so this can't be fixed with a hook. `wtmux` replaces the worktree-creation step with a wrapper that:
+No AI agent has a hook or config to rewrite attached directory paths mid-session, so this has to be fixed before the agent starts. `wtmux` replaces the worktree-creation step:
 
 1. **Creates matching worktrees** in every configured sibling repo — same branch name, same base branch.
 2. **Replicates symlinks** (`node_modules`, `.env`, etc.) from each origin into its new worktree, so dev servers and environment config just work.
-3. **Launches `claude`** with every non-primary worktree wired up as an `--add-dir` path — so your Claude Code session sees a coherent multi-repo workspace from the start.
+3. **Launches your agent** with every non-primary worktree attached via whichever flag the agent expects (`--add-dir`, `--add`, etc.).
 
 ## Features
 
 - 🌳 **Coordinated worktrees** across a configured group of sibling repos
-- 🔗 **Symlink replication** that mirrors Claude Code's `worktree.symlinkDirectories`
-- 🚀 **One-shot Claude Code launch** with siblings auto-registered as `--add-dir`
-- 🛡️ **Safe teardown** — `wtmux rm` refuses to remove worktrees with uncommitted changes, stashes, or unpushed commits (override with `--force`)
-- 🔍 **Preflight validation** — checks branch names via `git check-ref-format`, verifies worktree roots, detects branch conflicts before mutating anything
+- 🧠 **Multi-agent** — built-in support for `claude`, `codex`, `cursor`, `code`, `opencode`, `qoder`; `addDirArgs` config for any other CLI
+- 🔗 **Symlink replication** for `node_modules`, `.env`, or any path — globs supported
+- 🚀 **One-shot launch** with siblings auto-attached via the right flag
+- 🛡️ **Safe teardown** — `wtmux rm` refuses to remove worktrees with uncommitted changes, stashes, or unpushed commits (`--force` overrides)
+- 🔍 **Preflight validation** — validates branch names, worktree roots, and detects conflicts before mutating anything
 - ♻️ **Automatic rollback** when a worktree creation fails partway through the group
 - 📦 **Single-repo fallback** — works outside configured groups too
-- 🧠 **Multi-agent** — built-in support for `claude`, `codex`, `cursor`, `code`, `opencode`, `qoder`; config hook (`addDirArgs`) for any other CLI
 - 🔒 **Zero network, zero telemetry** — local-only tool
 
 ## Install
@@ -76,7 +76,7 @@ Then, from inside either repo:
 wtmux feat/login
 ```
 
-That creates `~/code/myapp-api/.worktrees/feat/login` and `~/code/myapp-web/.worktrees/feat/login`, both checked out on `feat/login` branched from the primary's current branch, both with `node_modules` and `.env` symlinked from their origins — and launches `claude` with the sibling wired up as `--add-dir`.
+That creates `~/code/myapp-api/.worktrees/feat/login` and `~/code/myapp-web/.worktrees/feat/login`, both checked out on `feat/login` branched from the primary's current branch, both with `node_modules` and `.env` symlinked from their origins — and launches your agent (Claude Code by default) with the sibling attached.
 
 When you're done:
 
@@ -90,7 +90,7 @@ wtmux rm feat/login
 
 | Command | Purpose |
 |---|---|
-| `wtmux <name>` | Create coordinated worktrees on branch `<name>` and launch Claude Code |
+| `wtmux <name>` | Create coordinated worktrees on branch `<name>` and launch the agent |
 | `wtmux rm <name>` | Remove coordinated worktrees (refuses on dirty / stashed / unpushed; `--force` overrides) |
 | `wtmux ls` | List coordinated worktrees across the current group, with per-repo state |
 | `wtmux config` | Interactively edit the wtmux config (create/edit/delete groups) |
@@ -103,7 +103,7 @@ wtmux rm feat/login
 | `--group <name>` | `-g` | Override auto-detected group |
 | `--base <branch>` | `-b` | Override the base branch (create only) |
 | `--dry-run` | `-n` | Print the plan without mutating |
-| `--no-launch` | — | Skip launching Claude Code at the end of `create` |
+| `--no-launch` | — | Skip launching the agent at the end of `create` |
 | `--force` | `-f` | `rm` only: skip dirty/stash/unpushed guards |
 | `--verbose` | `-v` | Extra logging |
 | `--version` | `-V` | Print version |
@@ -137,8 +137,7 @@ Config lookup order (first match wins):
     {
       "name": "myapp-codex",
       "repos": ["~/code/myapp-api", "~/code/myapp-web"],
-      "launchCommand": ["codex"],
-      "agent": "codex"
+      "launchCommand": ["codex"]
     },
     {
       "name": "myapp-custom",
@@ -152,27 +151,43 @@ Config lookup order (first match wins):
 
 | Field | Purpose |
 |---|---|
-| `symlinkDirectories` | Default paths to symlink from each repo root into each new worktree. Defaults to `["node_modules", ".env"]`. |
+| `symlinkDirectories` | Paths to symlink from each repo root into each new worktree. Defaults to `["node_modules", ".env"]`. |
 | `worktreePathPattern` | Where worktrees land inside each repo. `{name}` interpolates the worktree name. Defaults to `.worktrees/{name}`. |
-| `launchCommand` | Argv to exec after worktrees are created. Defaults to `["claude"]`. Override for other editors. |
-| `agent` | Which AI CLI is being launched (`claude` \| `codex` \| `cursor` \| `code` \| `opencode` \| `qoder`). Overrides basename detection. Omit to auto-detect from `launchCommand`. |
-| `addDirArgs` | Argv template injected per sibling worktree; `{path}` is interpolated. Example: `["--add-dir", "{path}"]`. Overrides `agent` when set. |
-| `groups[].name` | Unique group identifier. |
-| `groups[].repos` | Absolute or tilde-prefixed paths (min 2 repos — coordination needs siblings). |
-| `groups[].symlinkDirectories` | Per-group override (replaces the top-level list). |
-| `groups[].worktreePathPattern` | Per-group override. |
-| `groups[].launchCommand` | Per-group override. |
-| `groups[].agent` | Per-group override. |
-| `groups[].addDirArgs` | Per-group override. |
+| `launchCommand` | Argv to exec after worktrees are created. Defaults to `["claude"]`. |
+| `agent` | Force a specific agent's sibling-injection rules (`claude` \| `codex` \| `cursor` \| `code` \| `opencode` \| `qoder`). Only needed if your `launchCommand` uses a wrapper or alias that wtmux can't detect from its basename. |
+| `addDirArgs` | Argv template for CLIs wtmux doesn't know about. `{path}` is interpolated with each sibling's absolute path. See *Agents & sibling injection* below. |
+| `groups[].*` | Any of the above (except `groups`) can appear per-group and overrides the top-level value. |
 
-wtmux selects how to inject sibling worktrees by resolving (in order):
+### Agents & sibling injection
 
-1. `addDirArgs` — explicit argv template with `{path}` interpolation.
-2. `agent` — built-in registry lookup (`claude`/`codex` → `--add-dir {path}`, `cursor`/`code` → `--add {path}`, `opencode`/`qoder` → no multi-root).
-3. Basename of `launchCommand[0]` — same registry, via `path.basename(...)`; `qodercli` aliases to `qoder`.
-4. Fallback — append sibling paths as positional args (v0.3 behavior).
+Built-in agents and the flag wtmux injects per sibling:
 
-For agents with no multi-root support (`opencode`, `qoder`), wtmux still creates worktrees and replicates symlinks, then prints the worktree paths and skips the launch — equivalent to passing `--no-launch`.
+| Agent | Flag per sibling |
+|---|---|
+| `claude`, `codex` | `--add-dir <path>` |
+| `cursor`, `code` | `--add <path>` |
+| `opencode`, `qoder` | *no multi-root support* — see below |
+
+**Built-in agents auto-detect.** wtmux matches the basename of `launchCommand[0]` against the list above, so `claude`, `/usr/local/bin/claude`, and `~/.local/bin/claude` all work the same. Qoder's CLI is named `qodercli` — wtmux aliases it automatically.
+
+If you invoke an agent through a wrapper script or alias that wtmux can't recognize (e.g. `launchCommand: ["my-claude-wrapper"]`), set `agent: "claude"` to force the right injection rules.
+
+**Custom CLIs** go through `addDirArgs` — an argv template where `{path}` is replaced with each sibling's absolute path:
+
+```json
+{
+  "launchCommand": ["my-agent"],
+  "addDirArgs": ["--workdir", "{path}"]
+}
+```
+
+With two siblings, this expands to:
+
+```
+my-agent --workdir /abs/sibling1 --workdir /abs/sibling2
+```
+
+**Agents without multi-root support** (`opencode`, `qoder`): wtmux creates the worktrees and replicates symlinks, then prints the worktree paths and skips the launch — the same as passing `--no-launch`. Start the agent yourself in whichever worktree you want.
 
 ### Glob patterns in `symlinkDirectories`
 
@@ -189,16 +204,13 @@ Patterns resolve relative to each repo's root. Dotfiles are included by default,
 ## FAQ
 
 **How do I create a config without hand-writing JSON?**
-Run `wtmux config` from anywhere. It auto-detects sibling git repos in the parent directory and walks you through creating a group, with options to edit or delete groups later.
+Run `wtmux config` from anywhere. It auto-detects sibling git repos in the parent directory and walks you through creating a group.
 
 **Which AI agents does wtmux support out of the box?**
-`claude`, `codex`, `cursor`, `code`, `opencode`, `qoder`. For anything else, set `addDirArgs` in config — e.g., `"addDirArgs": ["--workdir", "{path}"]` to inject `--workdir <sibling-path>` per sibling.
-
-**What if my AI tool has no flag for additional directories?**
-wtmux auto-downgrades: it creates worktrees + symlinks, then prints the paths and skips the launch. Start the tool yourself in the directory you want.
+`claude`, `codex`, `cursor`, `code`, `opencode`, `qoder`. For anything else, set `addDirArgs` in config — see *Agents & sibling injection* above.
 
 **Can I use it with only one repo?**
-Yes. Run `wtmux <name>` from inside any git repo that isn't in a configured group — you get single-repo worktree creation + symlinks + Claude launch, no siblings.
+Yes. Run `wtmux <name>` from inside any git repo that isn't in a configured group — you get single-repo worktree creation + symlinks + agent launch, no siblings.
 
 **What happens if the worktrees already exist?**
 `wtmux` refuses to create over existing worktrees. Use `wtmux rm <name>` first, or pick a different name.
@@ -207,13 +219,13 @@ Yes. Run `wtmux <name>` from inside any git repo that isn't in a configured grou
 Commit, stash, or push first — or pass `--force`. `wtmux rm` intentionally refuses to silently discard work.
 
 **What's the difference from `git worktree add`?**
-`wtmux` coordinates the same worktree across multiple repos, replicates symlinks into each, and launches Claude Code with them wired up — in one command. Plain `git worktree add` handles one repo at a time and doesn't touch symlinks or your editor.
+`wtmux` coordinates the same worktree across multiple repos, replicates symlinks into each, and launches your agent with siblings attached — in one command. Plain `git worktree add` handles one repo at a time and doesn't touch symlinks or your agent.
 
 **Does it support Windows?**
 Not yet. macOS and Linux only. PRs welcome.
 
 **Does it send anything over the network?**
-No. `wtmux` is a local tool — no telemetry, no updates checks, no API calls.
+No. `wtmux` is a local tool — no telemetry, no update checks, no API calls.
 
 **What happens if I run `wtmux` with no name?**
 It generates a random, memorable name like `wt/brave-penguin` and creates coordinated worktrees on that branch. The generated name is printed to stderr so you can find it later via `wtmux rm wt/brave-penguin`.
@@ -226,7 +238,7 @@ Exit codes follow Unix conventions: `0` success, `1` user error, `2` preconditio
 
 ## Contributing
 
-Bug reports and PRs welcome at [github.com/OysterD3/wtmux](https://github.com/OysterD3/wtmux). The test suite uses real git repos in tmpdirs — `pnpm test` runs ~80 tests in a few seconds.
+Bug reports and PRs welcome at [github.com/OysterD3/wtmux](https://github.com/OysterD3/wtmux). The test suite uses real git repos in tmpdirs — `pnpm test` runs ~170 tests in a few seconds.
 
 ## License
 
