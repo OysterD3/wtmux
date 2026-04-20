@@ -3,6 +3,6 @@ import { version } from "../src/cli.js";
 
 describe("smoke", () => {
   it("exposes a version string", () => {
-    expect(version).toBe("0.1.0");
+    expect(version).toBe("0.2.0");
   });
 });

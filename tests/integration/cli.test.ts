@@ -33,7 +33,7 @@ afterEach(async () => {
 describe("cli", () => {
   it("prints --version", async () => {
     const result = await execa("node", [BIN, "--version"]);
-    expect(result.stdout).toMatch(/0\.1\.0/);
+    expect(result.stdout).toMatch(/0\.2\.0/);
   });
 
   it("creates coordinated worktrees via `wtmux <name>`", async () => {
