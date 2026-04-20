@@ -88,8 +88,8 @@ describe("rmFlow", () => {
     expect(result.removed.map((r) => r.repo)).toContain(b);
   });
 
-  it("skips a worktree with stashes and reports it", async () => {
-    const { cfg, a } = await setupGroup();
+  it("removes a worktree even when the repo has stashes (stashes are durable)", async () => {
+    const { cfg, a, b } = await setupGroup();
     await createPair("feat/stashed", cfg, a);
     const wtA = path.join(a, ".worktrees/feat-stashed");
     await fs.writeFile(path.join(wtA, "README.md"), "stashed\n");
@@ -104,7 +104,8 @@ describe("rmFlow", () => {
       force: false,
     });
 
-    expect(result.skipped.map((s) => s.repo)).toContain(a);
+    expect(result.removed.map((r) => r.repo).sort()).toEqual([a, b].sort());
+    expect((await execa("git", ["-C", a, "stash", "list"])).stdout).toMatch(/wip/);
   });
 
   it("--force removes dirty worktrees", async () => {

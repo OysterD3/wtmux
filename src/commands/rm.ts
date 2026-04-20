@@ -12,7 +12,7 @@ export const rmCommand = defineCommand({
     config: { type: "string", alias: "c" },
     group: { type: "string", alias: "g" },
     "dry-run": { type: "boolean", alias: "n", description: "Plan without mutating" },
-    force: { type: "boolean", alias: "f", description: "Skip dirty/stash/unpushed guards" },
+    force: { type: "boolean", alias: "f", description: "Skip dirty/unpushed guards" },
     verbose: { type: "boolean", alias: "v" },
   },
   async run({ args }) {

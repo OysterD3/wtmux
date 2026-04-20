@@ -1,6 +1,6 @@
 import { WtmuxError } from "../errors.js";
 import { resolveGroup } from "../group.js";
-import { listWorktrees, stashList, statusPorcelain, unpushedCommits } from "../git.js";
+import { listWorktrees, statusPorcelain, unpushedCommits } from "../git.js";
 import type { Config } from "../config/schema.js";
 
 export interface LsFlowInput {
@@ -12,7 +12,7 @@ export interface LsFlowInput {
 export interface LsRepoStatus {
   repo: string;
   present: boolean;
-  state: "clean" | "dirty" | "stashed" | "unpushed" | null;
+  state: "clean" | "dirty" | "unpushed" | null;
   wtPath: string | null;
 }
 
@@ -66,7 +66,6 @@ export async function lsFlow(input: LsFlowInput): Promise<LsRow[]> {
 
 async function classify(wtPath: string): Promise<LsRepoStatus["state"]> {
   if ((await statusPorcelain(wtPath)) !== "") return "dirty";
-  if ((await stashList(wtPath)).length > 0) return "stashed";
   if ((await unpushedCommits(wtPath)).length > 0) return "unpushed";
   return "clean";
 }

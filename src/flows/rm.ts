@@ -6,7 +6,6 @@ import {
   branchIsMergedInto,
   deleteBranch,
   getCurrentBranch,
-  stashList,
   statusPorcelain,
   unpushedCommits,
   worktreePrune,
@@ -61,19 +60,13 @@ export async function rmFlow(input: RmFlowInput): Promise<RmFlowResult> {
     if (!input.force) {
       const status = await statusPorcelain(wtPath);
       if (status !== "") {
-        warn(`skipping ${repo}/${input.name} — uncommitted changes`);
+        warn(`skipping ${wtPath} — uncommitted changes`);
         result.skipped.push({ repo, wtPath, reason: "dirty" });
-        continue;
-      }
-      const stashes = await stashList(wtPath);
-      if (stashes.length > 0) {
-        warn(`skipping ${repo}/${input.name} — ${stashes.length} stash(es) present`);
-        result.skipped.push({ repo, wtPath, reason: "stashed" });
         continue;
       }
       const unpushed = await unpushedCommits(wtPath);
       if (unpushed.length > 0) {
-        warn(`skipping ${repo}/${input.name} — ${unpushed.length} unpushed commit(s)`);
+        warn(`skipping ${wtPath} — ${unpushed.length} unpushed commit(s)`);
         result.skipped.push({ repo, wtPath, reason: "unpushed" });
         continue;
       }

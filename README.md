@@ -24,7 +24,7 @@ No AI agent has a hook or config to rewrite attached directory paths mid-session
 - 🧠 **Multi-agent** — built-in support for `claude`, `codex`, `cursor`, `code`, `opencode`, `qoder`; `addDirArgs` config for any other CLI
 - 🔗 **Symlink replication** for `node_modules`, `.env`, or any path — globs supported
 - 🚀 **One-shot launch** with siblings auto-attached via the right flag
-- 🛡️ **Safe teardown** — `wtmux rm` refuses to remove worktrees with uncommitted changes, stashes, or unpushed commits (`--force` overrides)
+- 🛡️ **Safe teardown** — `wtmux rm` refuses to remove worktrees with uncommitted changes or unpushed commits (`--force` overrides)
 - 🔍 **Preflight validation** — validates branch names, worktree roots, and detects conflicts before mutating anything
 - ♻️ **Automatic rollback** when a worktree creation fails partway through the group
 - 📦 **Single-repo fallback** — works outside configured groups too
@@ -74,14 +74,14 @@ When you're done:
 wtmux rm feat/login
 ```
 
-`rm` refuses if any side is dirty, stashed, or unpushed. Pass `--force` to override.
+`rm` refuses if any side is dirty or has unpushed commits. Pass `--force` to override. Stashes aren't checked — they live at the repo level and survive worktree removal.
 
 ## Commands
 
 | Command | Purpose |
 |---|---|
 | `wtmux <name>` | Create coordinated worktrees on branch `<name>` and launch the agent |
-| `wtmux rm <name>` | Remove coordinated worktrees (refuses on dirty / stashed / unpushed; `--force` overrides) |
+| `wtmux rm <name>` | Remove coordinated worktrees (refuses on dirty / unpushed; `--force` overrides) |
 | `wtmux ls` | List coordinated worktrees across the current group, with per-repo state |
 | `wtmux config` | Interactively edit the wtmux config (create/edit/delete groups) |
 
@@ -94,7 +94,7 @@ wtmux rm feat/login
 | `--base <branch>` | `-b` | Override the base branch (create only) |
 | `--dry-run` | `-n` | Print the plan without mutating |
 | `--no-launch` | — | Skip launching the agent at the end of `create` |
-| `--force` | `-f` | `rm` only: skip dirty/stash/unpushed guards |
+| `--force` | `-f` | `rm` only: skip dirty/unpushed guards |
 | `--verbose` | `-v` | Extra logging |
 | `--version` | `-V` | Print version |
 | `--help` | `-h` | Print help |
@@ -231,7 +231,7 @@ Patterns resolve relative to each repo's root. Dotfiles are included by default,
 
 ## Status
 
-v0.4.2 — stable for personal use.
+v0.4.3 — stable for personal use.
 
 Exit codes follow Unix conventions: `0` success, `1` user error, `2` precondition failure, `3` internal error.
 
