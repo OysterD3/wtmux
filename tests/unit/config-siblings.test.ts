@@ -61,14 +61,30 @@ describe("detectSiblings", () => {
     expect(siblings).toEqual([]);
   });
 
-  it("works when cwd is not itself a git repo", async () => {
+  it("scans children instead of parent when cwd is not a git repo", async () => {
+    const parent = await tmp();
+    const container = path.join(parent, "container");
+    const parentSibling = path.join(parent, "parent-sibling");
+    const childA = path.join(container, "child-a");
+    const childB = path.join(container, "child-b");
+    const childPlain = path.join(container, "plain");
+    await initRepo(parentSibling);
+    await initRepo(childA);
+    await initRepo(childB);
+    await fs.mkdir(childPlain);
+
+    const siblings = await detectSiblings(container);
+    expect(siblings.sort()).toEqual([childA, childB].sort());
+    expect(siblings).not.toContain(parentSibling);
+  });
+
+  it("returns empty array when cwd is neither a repo nor contains repos", async () => {
     const parent = await tmp();
     const notRepo = path.join(parent, "not-repo");
-    const b = path.join(parent, "repo-b");
     await fs.mkdir(notRepo);
-    await initRepo(b);
+    await fs.mkdir(path.join(notRepo, "also-plain"));
 
     const siblings = await detectSiblings(notRepo);
-    expect(siblings).toEqual([b]);
+    expect(siblings).toEqual([]);
   });
 });

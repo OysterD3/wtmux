@@ -231,7 +231,7 @@ Patterns resolve relative to each repo's root. Dotfiles are included by default,
 
 ## Status
 
-v0.4.0 — stable for personal use.
+v0.4.1 — stable for personal use.
 
 Exit codes follow Unix conventions: `0` success, `1` user error, `2` precondition failure, `3` internal error.
 
