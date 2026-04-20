@@ -149,7 +149,7 @@ Config lookup order (first match wins):
 | `groups[].worktreePathPattern` | Per-group override. |
 | `groups[].launchCommand` | Per-group override. |
 
-`wtmux` appends `--add-dir <sibling-wt>` flags automatically **only when `launchCommand[0] === "claude"`**. For other editors, sibling worktree paths are appended as positional arguments.
+`wtmux` appends `--add-dir <sibling-wt>` flags automatically **when the launch command's basename is `claude`** — so `claude`, `/usr/local/bin/claude`, and `~/.local/bin/claude` all trigger injection. For other editors, sibling worktree paths are appended as positional arguments.
 
 ### Glob patterns in `symlinkDirectories`
 
@@ -169,7 +169,7 @@ Patterns resolve relative to each repo's root. Dotfiles are included by default,
 Run `wtmux config` from anywhere. It auto-detects sibling git repos in the parent directory and walks you through creating a group, with options to edit or delete groups later.
 
 **Does `wtmux` work without Claude Code?**
-Yes. Set `"launchCommand": ["code", "."]` (VS Code) or `["cursor", "."]` (Cursor) or any other editor. Claude Code's `--add-dir` flag injection only fires when the launch command is literally `claude`.
+Yes. Set `"launchCommand": ["code", "."]` (VS Code) or `["cursor", "."]` (Cursor) or any other editor. Claude Code's `--add-dir` flag injection only fires when the launch command's basename is `claude`.
 
 **Can I use it with only one repo?**
 Yes. Run `wtmux <name>` from inside any git repo that isn't in a configured group — you get single-repo worktree creation + symlinks + Claude launch, no siblings.
