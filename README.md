@@ -74,7 +74,7 @@ When you're done:
 wtmux rm feat/login
 ```
 
-`rm` refuses if any side is dirty or has unpushed commits. Pass `--force` to override. Stashes aren't checked — they live at the repo level and survive worktree removal.
+`rm` refuses if any side is dirty or has unpushed commits. Pass `--force` to override.
 
 ## Commands
 
@@ -96,8 +96,8 @@ wtmux rm feat/login
 | `--no-launch` | — | Skip launching the agent at the end of `create` |
 | `--force` | `-f` | `rm` only: skip dirty/unpushed guards |
 | `--verbose` | `-v` | Extra logging |
-| `--version` | `-V` | Print version |
-| `--help` | `-h` | Print help |
+| `--version` | — | Print version |
+| `--help` | — | Print help |
 
 ## Configuration
 
@@ -142,7 +142,7 @@ Config lookup order (first match wins):
 | Field | Purpose |
 |---|---|
 | `symlinkDirectories` | Paths to symlink from each repo root into each new worktree. Defaults to `["node_modules", ".env"]`. |
-| `worktreePathPattern` | Where worktrees land inside each repo. `{name}` interpolates the worktree name, with any `/` flattened to `-` so nested branch names (e.g. `feat/login`) produce a single folder (`.worktrees/feat-login`). Defaults to `.worktrees/{name}`. |
+| `worktreePathPattern` | Where worktrees land inside each repo. `{name}` interpolates the worktree name (`/` flattened to `-`). Defaults to `.worktrees/{name}`. |
 | `launchCommand` | Argv to exec after worktrees are created. Defaults to `["claude"]`. |
 | `agent` | Force a specific agent's sibling-injection rules (`claude` \| `codex` \| `cursor` \| `code` \| `opencode` \| `qoder`). Only needed if your `launchCommand` uses a wrapper or alias that wtmux can't detect from its basename. |
 | `addDirArgs` | Argv template for CLIs wtmux doesn't know about. `{path}` is interpolated with each sibling's absolute path. See *Agents & sibling injection* below. |
@@ -228,12 +228,6 @@ Patterns resolve relative to each repo's root. Dotfiles are included by default,
 9. **What happens if I run `wtmux` with no name?**
 
    It generates a random, memorable name like `wt/brave-penguin` and creates coordinated worktrees on that branch. The generated name is printed to stderr so you can find it later via `wtmux rm wt/brave-penguin`.
-
-## Status
-
-v0.4.3 — stable for personal use.
-
-Exit codes follow Unix conventions: `0` success, `1` user error, `2` precondition failure, `3` internal error.
 
 ## License
 

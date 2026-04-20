@@ -67,6 +67,11 @@ describe("rmFlow", () => {
     expect(result.removed.length).toBe(2);
     await expect(fs.stat(path.join(a, ".worktrees/feat-clean"))).rejects.toThrow();
     await expect(fs.stat(path.join(b, ".worktrees/feat-clean"))).rejects.toThrow();
+
+    const branchA = (await execa("git", ["-C", a, "branch", "--list", "feat/clean"])).stdout.trim();
+    const branchB = (await execa("git", ["-C", b, "branch", "--list", "feat/clean"])).stdout.trim();
+    expect(branchA).toBe("");
+    expect(branchB).toBe("");
   });
 
   it("skips a dirty worktree and reports it", async () => {
@@ -125,6 +130,9 @@ describe("rmFlow", () => {
 
     expect(result.removed.length).toBe(2);
     await expect(fs.stat(wtA)).rejects.toThrow();
+
+    const branchA = (await execa("git", ["-C", a, "branch", "--list", "feat/forced"])).stdout.trim();
+    expect(branchA).toBe("");
   });
 
   it("dry-run skips all mutations", async () => {

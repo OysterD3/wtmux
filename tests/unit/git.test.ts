@@ -3,8 +3,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  branchIsMergedInto,
   checkRefFormat,
+  deleteBranch,
   getCurrentBranch,
   getToplevel,
   isWorktreeRoot,
@@ -125,11 +125,26 @@ describe("git helpers", () => {
     expect(branch).toBe("feat/new");
   });
 
-  it("branchIsMergedInto returns true for a branch merged into target", async () => {
+  it("deleteBranch removes a fully-merged branch with -d", async () => {
     const repo = await tmp();
     await initRepo(repo);
     await execa("git", ["-C", repo, "branch", "feat/x"]);
-    // feat/x points at the same commit as main, so it's trivially "merged"
-    expect(await branchIsMergedInto(repo, "feat/x", "main")).toBe(true);
+    await deleteBranch(repo, "feat/x");
+    const { stdout } = await execa("git", ["-C", repo, "branch", "--list", "feat/x"]);
+    expect(stdout.trim()).toBe("");
+  });
+
+  it("deleteBranch with force removes an unmerged branch", async () => {
+    const repo = await tmp();
+    await initRepo(repo);
+    await execa("git", ["-C", repo, "checkout", "-b", "feat/x"]);
+    await fs.writeFile(path.join(repo, "new.md"), "x\n");
+    await execa("git", ["-C", repo, "add", "new.md"]);
+    await execa("git", ["-C", repo, "commit", "-m", "unmerged"]);
+    await execa("git", ["-C", repo, "checkout", "main"]);
+    await expect(deleteBranch(repo, "feat/x")).rejects.toThrow();
+    await deleteBranch(repo, "feat/x", { force: true });
+    const { stdout } = await execa("git", ["-C", repo, "branch", "--list", "feat/x"]);
+    expect(stdout.trim()).toBe("");
   });
 });

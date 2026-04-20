@@ -3,9 +3,7 @@ import { expandWorktreePath, pathExists } from "../paths.js";
 import { info, warn } from "../log.js";
 import { resolveGroup } from "../group.js";
 import {
-  branchIsMergedInto,
   deleteBranch,
-  getCurrentBranch,
   statusPorcelain,
   unpushedCommits,
   worktreePrune,
@@ -75,17 +73,11 @@ export async function rmFlow(input: RmFlowInput): Promise<RmFlowResult> {
     await worktreeRemove(repo, wtPath, { force: input.force });
     result.removed.push({ repo, wtPath });
 
-    const base = (await getCurrentBranch(repo)) ?? "HEAD";
     try {
-      if (await branchIsMergedInto(repo, input.name, base)) {
-        await deleteBranch(repo, input.name);
-      } else {
-        info(
-          `branch "${input.name}" in ${repo} is not fully merged into ${base} — leaving it. Delete manually with: git -C ${repo} branch -D ${input.name}`,
-        );
-      }
-    } catch {
-      // branch deletion failures are non-fatal
+      await deleteBranch(repo, input.name, { force: input.force });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      info(`could not delete branch "${input.name}" in ${repo}: ${message}`);
     }
 
     await worktreePrune(repo);

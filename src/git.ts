@@ -145,22 +145,17 @@ export async function worktreePrune(repoPath: string): Promise<void> {
   await run(repoPath, ["worktree", "prune"]);
 }
 
-export async function branchIsMergedInto(
+export async function deleteBranch(
   repoPath: string,
   branch: string,
-  target: string,
-): Promise<boolean> {
-  const { stdout, exitCode } = await run(repoPath, ["branch", "--merged", target]);
-  if (exitCode !== 0) return false;
-  return stdout
-    .split("\n")
-    .map((l) => l.trim().replace(/^\*\s+/, ""))
-    .includes(branch);
-}
-
-export async function deleteBranch(repoPath: string, branch: string): Promise<void> {
-  const result = await execa("git", ["branch", "-d", branch], { cwd: repoPath, reject: false });
+  opts: { force?: boolean } = {},
+): Promise<void> {
+  const flag = opts.force ? "-D" : "-d";
+  const result = await execa("git", ["branch", flag, branch], {
+    cwd: repoPath,
+    reject: false,
+  });
   if ((result.exitCode ?? 1) !== 0) {
-    throw new Error(`git branch -d failed in ${repoPath}: ${result.stderr}`);
+    throw new Error(`git branch ${flag} failed in ${repoPath}: ${result.stderr}`);
   }
 }
