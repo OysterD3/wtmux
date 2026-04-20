@@ -52,3 +52,68 @@ describe("ConfigSchema", () => {
     expect(parsed.groups[0]!.symlinkDirectories).toEqual(["node_modules", ".env.local"]);
   });
 });
+
+describe("ConfigSchema — agent + addDirArgs", () => {
+  it("accepts a valid top-level agent", () => {
+    const parsed = ConfigSchema.parse({
+      agent: "codex",
+      groups: [{ name: "g", repos: ["/abs/a", "/abs/b"] }],
+    });
+    expect(parsed.agent).toBe("codex");
+  });
+
+  it("rejects an unknown agent value", () => {
+    const result = ConfigSchema.safeParse({
+      agent: "claude-code",
+      groups: [{ name: "g", repos: ["/abs/a", "/abs/b"] }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("accepts a valid addDirArgs template containing {path}", () => {
+    const parsed = ConfigSchema.parse({
+      addDirArgs: ["--add-dir", "{path}"],
+      groups: [{ name: "g", repos: ["/abs/a", "/abs/b"] }],
+    });
+    expect(parsed.addDirArgs).toEqual(["--add-dir", "{path}"]);
+  });
+
+  it("rejects addDirArgs without any {path} token", () => {
+    const result = ConfigSchema.safeParse({
+      addDirArgs: ["--foo", "bar"],
+      groups: [{ name: "g", repos: ["/abs/a", "/abs/b"] }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an empty addDirArgs array", () => {
+    const result = ConfigSchema.safeParse({
+      addDirArgs: [],
+      groups: [{ name: "g", repos: ["/abs/a", "/abs/b"] }],
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("allows per-group agent + addDirArgs override", () => {
+    const parsed = ConfigSchema.parse({
+      groups: [
+        {
+          name: "g",
+          repos: ["/abs/a", "/abs/b"],
+          agent: "cursor",
+          addDirArgs: ["--dir={path}"],
+        },
+      ],
+    });
+    expect(parsed.groups[0]!.agent).toBe("cursor");
+    expect(parsed.groups[0]!.addDirArgs).toEqual(["--dir={path}"]);
+  });
+
+  it("treats both fields as undefined when absent", () => {
+    const parsed = ConfigSchema.parse({
+      groups: [{ name: "g", repos: ["/abs/a", "/abs/b"] }],
+    });
+    expect(parsed.agent).toBeUndefined();
+    expect(parsed.addDirArgs).toBeUndefined();
+  });
+});
