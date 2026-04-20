@@ -1,5 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { expandAddDirArgs, type ResolvedStrategy } from "./agents.js";
+import { WtmuxError } from "./errors.js";
 
 export interface BuildLaunchArgvInput {
   launchCommand: readonly string[];
@@ -12,8 +13,9 @@ export function buildLaunchArgv(input: BuildLaunchArgvInput): string[] {
   const { launchCommand, siblingWorktrees, strategy, extraArgs = [] } = input;
 
   if (strategy.kind === "none") {
-    throw new Error(
+    throw new WtmuxError(
       `buildLaunchArgv called with "none" strategy (agent: ${strategy.agentId}); callers must short-circuit the launch`,
+      "internal",
     );
   }
 

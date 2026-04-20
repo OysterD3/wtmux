@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildLaunchArgv } from "../../src/launch.js";
 import type { ResolvedStrategy } from "../../src/agents.js";
+import { WtmuxError } from "../../src/errors.js";
 
 describe("buildLaunchArgv", () => {
   it("injects flag-strategy args per sibling", () => {
@@ -92,6 +93,6 @@ describe("buildLaunchArgv", () => {
         siblingWorktrees: ["/x/wt"],
         strategy,
       }),
-    ).toThrow();
+    ).toThrow(WtmuxError);
   });
 });
