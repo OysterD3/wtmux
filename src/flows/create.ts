@@ -11,6 +11,7 @@ import {
 } from "../git.js";
 import { removeSymlinks, replicateSymlinks } from "../symlinks.js";
 import { buildLaunchArgv, execLaunch } from "../launch.js";
+import { resolveStrategy } from "../agents.js";
 import type { Config } from "../config/schema.js";
 import { generateWithRetry } from "../random-name.js";
 import { expandSymlinkItems } from "../glob.js";
@@ -112,12 +113,25 @@ async function createSingleRepo(repo: string, input: CreateFlowInput): Promise<C
   await replicateSymlinks({ repo, wt: wtPath, items: expandedItems });
 
   if (!input.noLaunch) {
-    const argv = buildLaunchArgv({
+    const strategy = resolveStrategy({
       launchCommand: input.config.launchCommand,
-      siblingWorktrees: [],
-      extraArgs: input.extraArgs,
+      agent: input.config.agent,
+      addDirArgs: input.config.addDirArgs,
+      warn,
     });
-    execLaunch({ argv, cwd: wtPath });
+    // Single-repo has no siblings; `none` degrades to a plain launch of the primary.
+    if (strategy.kind === "none") {
+      const argv = [...input.config.launchCommand, ...input.extraArgs];
+      execLaunch({ argv, cwd: wtPath });
+    } else {
+      const argv = buildLaunchArgv({
+        launchCommand: input.config.launchCommand,
+        siblingWorktrees: [],
+        strategy,
+        extraArgs: input.extraArgs,
+      });
+      execLaunch({ argv, cwd: wtPath });
+    }
   }
 
   return { kind: "single", repo, wtPath };
@@ -210,12 +224,23 @@ async function createGroup(
       .filter(({ path: r }) => r !== primary)
       .map((r) => r.wtPath);
     const primaryWt = plan.repos.find((r) => r.path === primary)!.wtPath;
-    const argv = buildLaunchArgv({
-      launchCommand,
-      siblingWorktrees: siblings,
-      extraArgs: input.extraArgs,
-    });
-    execLaunch({ argv, cwd: primaryWt });
+
+    const agent = resolved.group.agent ?? input.config.agent;
+    const addDirArgs = resolved.group.addDirArgs ?? input.config.addDirArgs;
+    const strategy = resolveStrategy({ launchCommand, agent, addDirArgs, warn });
+
+    if (strategy.kind === "none") {
+      info(`${strategy.agentId} has no multi-root support. Worktrees ready:`);
+      for (const p of [primaryWt, ...siblings]) info(`  - ${p}`);
+    } else {
+      const argv = buildLaunchArgv({
+        launchCommand,
+        siblingWorktrees: siblings,
+        strategy,
+        extraArgs: input.extraArgs,
+      });
+      execLaunch({ argv, cwd: primaryWt });
+    }
   }
 
   return { kind: "group", worktrees: plan.repos.map(({ path: repo, wtPath }) => ({ repo, wtPath })), primary };
