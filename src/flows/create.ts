@@ -12,9 +12,10 @@ import {
 import { removeSymlinks, replicateSymlinks } from "../symlinks.js";
 import { buildLaunchArgv, execLaunch } from "../launch.js";
 import type { Config } from "../config/schema.js";
+import { generateWithRetry } from "../random-name.js";
 
 export interface CreateFlowInput {
-  name: string;
+  name: string | undefined;
   cwd: string;
   config: Config;
   groupFlag: string | undefined;
@@ -42,14 +43,35 @@ export async function createFlow(input: CreateFlowInput): Promise<CreateFlowResu
     );
   }
 
-  if (resolved.kind === "single") {
-    return createSingleRepo(resolved.repo, input);
+  // Determine the primary repo path for random-name collision checks.
+  const primaryForRandom =
+    resolved.kind === "group" ? resolved.primary :
+    resolved.kind === "single" ? resolved.repo :
+    null;
+
+  let resolvedName = input.name;
+  if (resolvedName === undefined) {
+    if (!primaryForRandom) {
+      throw new WtmuxError(
+        "cwd is not inside any git repository — run wtmux from within a repo, or pass --group",
+        "precondition",
+      );
+    }
+    resolvedName = await generateWithRetry((n) => branchExists(primaryForRandom, n));
+    info(`generated worktree name: ${resolvedName}`);
   }
 
-  return createGroup(resolved, input);
+  const resolvedInput: CreateFlowInput = { ...input, name: resolvedName };
+
+  if (resolved.kind === "single") {
+    return createSingleRepo(resolved.repo, resolvedInput);
+  }
+
+  return createGroup(resolved, resolvedInput);
 }
 
 async function createSingleRepo(repo: string, input: CreateFlowInput): Promise<CreateFlowResult> {
+  const name = input.name!;
   const base = input.baseOverride ?? (await getCurrentBranch(repo));
   if (!base) {
     throw new WtmuxError(
@@ -58,11 +80,11 @@ async function createSingleRepo(repo: string, input: CreateFlowInput): Promise<C
     );
   }
 
-  const wtPath = expandWorktreePath(repo, input.config.worktreePathPattern, input.name);
-  const plan = { name: input.name, baseBranch: base, repos: [{ path: repo, wtPath }] };
+  const wtPath = expandWorktreePath(repo, input.config.worktreePathPattern, name);
+  const plan = { name, baseBranch: base, repos: [{ path: repo, wtPath }] };
 
   if (input.dryRun) {
-    info(`dry-run: would create ${wtPath} from ${base} (${input.name})`);
+    info(`dry-run: would create ${wtPath} from ${base} (${name})`);
     return { kind: "single", repo, wtPath };
   }
 
@@ -70,16 +92,16 @@ async function createSingleRepo(repo: string, input: CreateFlowInput): Promise<C
   if (!pre.ok) throw new WtmuxError(pre.errors.join("\n"), "user");
 
   if (input.baseOverride) {
-    const exists = await branchExists(repo, input.name);
+    const exists = await branchExists(repo, name);
     if (exists) {
-      warn(`--base "${input.baseOverride}" ignored: branch "${input.name}" already exists`);
+      warn(`--base "${input.baseOverride}" ignored: branch "${name}" already exists`);
     }
   }
 
-  const exists = await branchExists(repo, input.name);
+  const exists = await branchExists(repo, name);
   await worktreeAdd(repo, {
     path: wtPath,
-    branch: input.name,
+    branch: name,
     base,
     createBranch: !exists,
   });
@@ -103,6 +125,7 @@ async function createGroup(
   resolved: Extract<GroupResolution, { kind: "group" }>,
   input: CreateFlowInput,
 ): Promise<CreateFlowResult> {
+  const name = input.name!;
   const primary = resolved.primary;
   const base = input.baseOverride ?? (await getCurrentBranch(primary));
   if (!base) {
@@ -117,16 +140,16 @@ async function createGroup(
   const launchCommand = resolved.group.launchCommand ?? input.config.launchCommand;
 
   const plan = {
-    name: input.name,
+    name,
     baseBranch: base,
     repos: resolved.group.repos.map((r) => ({
       path: r,
-      wtPath: expandWorktreePath(r, pattern, input.name),
+      wtPath: expandWorktreePath(r, pattern, name),
     })),
   };
 
   if (input.dryRun) {
-    info(`dry-run: would create worktrees for "${input.name}" from "${base}":`);
+    info(`dry-run: would create worktrees for "${name}" from "${base}":`);
     for (const { path: repo, wtPath } of plan.repos) info(`  ${repo} -> ${wtPath}`);
     info(`dry-run: symlink items: ${items.join(", ")}`);
     return {
@@ -141,20 +164,20 @@ async function createGroup(
 
   if (input.baseOverride) {
     const existing = await Promise.all(
-      plan.repos.map((r) => branchExists(r.path, input.name)),
+      plan.repos.map((r) => branchExists(r.path, name)),
     );
     if (existing.some((e) => e)) {
-      warn(`--base "${input.baseOverride}" ignored: branch "${input.name}" already exists`);
+      warn(`--base "${input.baseOverride}" ignored: branch "${name}" already exists`);
     }
   }
 
   const placed: { repo: string; wtPath: string; items: string[] }[] = [];
   try {
     for (const { path: repo, wtPath } of plan.repos) {
-      const exists = await branchExists(repo, input.name);
+      const exists = await branchExists(repo, name);
       await worktreeAdd(repo, {
         path: wtPath,
-        branch: input.name,
+        branch: name,
         base,
         createBranch: !exists,
       });

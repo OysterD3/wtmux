@@ -20,10 +20,6 @@ export const createCommand = defineCommand({
   },
   async run({ args, rawArgs }) {
     setVerbose(Boolean(args.verbose));
-    if (!args.name) {
-      process.stderr.write("usage: wtmux <name> [-- claude-args...]\n");
-      process.exit(1);
-    }
     const loaded = await loadConfig({
       cwd: process.cwd(),
       env: process.env,

@@ -212,4 +212,29 @@ describe("createFlow", () => {
     const wtA = path.join(a, ".worktrees/feat/detached-ok");
     expect((await fs.stat(wtA)).isDirectory()).toBe(true);
   });
+
+  it("generates a random name when no name is provided", async () => {
+    const { cfg, a, b } = await setupGroup();
+    const result = await createFlow({
+      name: undefined,
+      cwd: a,
+      config: cfg,
+      groupFlag: undefined,
+      dryRun: false,
+      noLaunch: true,
+      extraArgs: [],
+      baseOverride: undefined,
+    });
+
+    expect(result.kind).toBe("group");
+    if (result.kind !== "group") return;
+
+    const wtPathA = result.worktrees[0]!.wtPath;
+    const relA = wtPathA.substring(wtPathA.indexOf(".worktrees/") + ".worktrees/".length);
+    expect(relA).toMatch(/^wt\/[a-z]+-[a-z]+$/);
+
+    expect((await fs.stat(wtPathA)).isDirectory()).toBe(true);
+    const wtPathB = result.worktrees.find((w) => w.repo === b)!.wtPath;
+    expect((await fs.stat(wtPathB)).isDirectory()).toBe(true);
+  });
 });
