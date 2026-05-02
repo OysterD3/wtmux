@@ -37,7 +37,7 @@ const (
 type Strategy struct {
 	Kind StrategyKind
 	// Args is the flag template; "{path}" is replaced with each sibling's
-	// absolute path. Empty when Kind == StrategyNone.
+	// absolute path. Populated only when Kind == StrategyFlag.
 	Args []string
 }
 
@@ -69,8 +69,13 @@ const (
 	SourceFallback   ResolvedStrategySource = "fallback"
 )
 
-// ResolvedStrategy is what ResolveStrategy returns. Exactly one of FlagArgs or
-// PositionalFallback applies based on Kind.
+// ResolvedStrategy is what ResolveStrategy returns. Per-Kind field map:
+//
+//	StrategyFlag       → FlagArgs populated; AgentID empty
+//	StrategyNone       → AgentID populated; FlagArgs nil
+//	StrategyPositional → both empty; caller decides
+//
+// Source is always populated.
 type ResolvedStrategy struct {
 	Kind     StrategyKind
 	FlagArgs []string // populated when Kind == StrategyFlag
