@@ -161,3 +161,19 @@ func TestBranchExists_False(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, got)
 }
+
+func TestHasRef_True(t *testing.T) {
+	repo := initRepo(t)
+
+	got, err := HasRef(repo, "HEAD")
+	require.NoError(t, err)
+	assert.True(t, got)
+}
+
+func TestHasRef_False(t *testing.T) {
+	repo := initRepo(t)
+
+	got, err := HasRef(repo, "refs/heads/never-existed")
+	require.NoError(t, err)
+	assert.False(t, got)
+}

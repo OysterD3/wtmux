@@ -75,3 +75,13 @@ func BranchExists(repo, name string) (bool, error) {
 	}
 	return code == 0, nil
 }
+
+// HasRef reports whether ref resolves in repo via `rev-parse --verify`.
+// Accepts any ref form (branch, tag, SHA, HEAD, etc.).
+func HasRef(repo, ref string) (bool, error) {
+	_, _, code, err := run(repo, "rev-parse", "--verify", "--quiet", ref)
+	if err != nil {
+		return false, err
+	}
+	return code == 0, nil
+}
