@@ -268,3 +268,27 @@ func TestListWorktrees_SingleAndLinked(t *testing.T) {
 	assert.NotEmpty(t, got[1].Head)
 	assert.Equal(t, resolveSymlinks(t, wtPath), resolveSymlinks(t, got[1].Worktree))
 }
+
+func TestWorktreeAddNew(t *testing.T) {
+	repo := initRepo(t)
+	wt := filepath.Join(t.TempDir(), "new-wt")
+
+	err := WorktreeAddNew(repo, wt, "feat", "")
+	require.NoError(t, err)
+
+	// .git file inside the new worktree confirms it's a linked worktree.
+	info, err := os.Stat(filepath.Join(wt, ".git"))
+	require.NoError(t, err)
+	assert.True(t, info.Mode().IsRegular(), ".git in linked worktree should be a regular file")
+}
+
+func TestWorktreeAddNew_FailsOnExistingPath(t *testing.T) {
+	repo := initRepo(t)
+	wt := filepath.Join(t.TempDir(), "occupied")
+	require.NoError(t, os.MkdirAll(wt, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(wt, "blocker"), []byte("x"), 0o644))
+
+	err := WorktreeAddNew(repo, wt, "feat", "")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "git worktree add failed")
+}

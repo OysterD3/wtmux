@@ -5,7 +5,10 @@
 // functions. Tests require git on PATH (TestMain hard-fails otherwise).
 package git
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // CheckRefFormat reports whether name is a valid git branch name, per
 // `git check-ref-format --branch`. No working directory is required.
@@ -159,4 +162,21 @@ func ListWorktrees(repo string) ([]WorktreeEntry, error) {
 		return nil, nil
 	}
 	return parseWorktreePorcelain(stdout), nil
+}
+
+// WorktreeAddNew creates a new branch and a linked worktree at path.
+// Runs `git worktree add -b <branch> <path> <base>`. An empty base
+// substitutes "HEAD".
+func WorktreeAddNew(repo, path, branch, base string) error {
+	if base == "" {
+		base = "HEAD"
+	}
+	_, stderr, code, err := run(repo, "worktree", "add", "-b", branch, path, base)
+	if err != nil {
+		return err
+	}
+	if code != 0 {
+		return fmt.Errorf("git worktree add failed in %s: %s", repo, stderr)
+	}
+	return nil
 }
