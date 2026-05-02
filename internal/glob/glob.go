@@ -26,11 +26,11 @@ func hasGlobChars(s string) bool {
 
 // matchSegs reports whether the file-path segments fSegs match the pattern
 // segments pSegs. A pattern segment of "**" matches zero or more file
-// segments; the algorithm tries every position, so {"a", "**", "b"} matches
-// {"a", "b"} (zero), {"a", "x", "b"} (one), and {"a", "x", "y", "b"} (two).
-// Non-** segments delegate to stdlib path.Match, which supports "*", "?",
-// "[...]", and "\" escapes. Returns the path.Match error verbatim on
-// malformed patterns (e.g. unclosed "[").
+// segments greedily but the algorithm tries every position, so
+// {"a", "**", "b"} matches {"a", "b"} (zero), {"a", "x", "b"} (one), and
+// {"a", "x", "y", "b"} (two). Non-** segments delegate to stdlib path.Match,
+// which supports "*", "?", "[...]", and "\" escapes. Returns the path.Match
+// error verbatim on malformed patterns (e.g. unclosed "[").
 func matchSegs(pSegs, fSegs []string) (bool, error) {
 	if len(pSegs) == 0 {
 		return len(fSegs) == 0, nil
