@@ -380,3 +380,20 @@ func TestDeleteBranch_RefusesUnmerged(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "git branch -d failed")
 }
+
+func TestDeleteBranchForce(t *testing.T) {
+	repo := initRepo(t)
+	// Branch with an unmerged commit — `branch -d` would refuse.
+	mustGit(t, repo, "checkout", "-b", "force-me")
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "f.txt"), []byte("x"), 0o644))
+	mustGit(t, repo, "add", "f.txt")
+	mustGit(t, repo, "commit", "-m", "extra")
+	mustGit(t, repo, "checkout", "main")
+
+	err := DeleteBranchForce(repo, "force-me")
+	require.NoError(t, err)
+
+	exists, err := BranchExists(repo, "force-me")
+	require.NoError(t, err)
+	assert.False(t, exists)
+}

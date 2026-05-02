@@ -243,3 +243,16 @@ func DeleteBranch(repo, branch string) error {
 	}
 	return nil
 }
+
+// DeleteBranchForce deletes a branch via `git branch -D <branch>`,
+// regardless of merge state.
+func DeleteBranchForce(repo, branch string) error {
+	_, stderr, code, err := run(repo, "branch", "-D", branch)
+	if err != nil {
+		return err
+	}
+	if code != 0 {
+		return fmt.Errorf("git branch -D failed in %s: %s", repo, stderr)
+	}
+	return nil
+}
