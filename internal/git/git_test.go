@@ -102,3 +102,21 @@ func TestGetToplevel_OutsideRepo(t *testing.T) {
 	assert.False(t, ok)
 	assert.Empty(t, got)
 }
+
+func TestIsWorktreeRoot_Main(t *testing.T) {
+	repo := initRepo(t)
+
+	got, err := IsWorktreeRoot(repo)
+	require.NoError(t, err)
+	assert.True(t, got)
+}
+
+func TestIsWorktreeRoot_Linked(t *testing.T) {
+	repo := initRepo(t)
+	wt := filepath.Join(t.TempDir(), "linked-wt")
+	mustGit(t, repo, "worktree", "add", "-b", "feat", wt)
+
+	got, err := IsWorktreeRoot(wt)
+	require.NoError(t, err)
+	assert.False(t, got)
+}

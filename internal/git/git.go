@@ -28,3 +28,24 @@ func GetToplevel(cwd string) (path string, ok bool, err error) {
 	}
 	return stdout, true, nil
 }
+
+// IsWorktreeRoot reports whether repo is the main worktree of its repository
+// (git-dir == git-common-dir). Linked worktrees have a different git-dir
+// under .git/worktrees/<name>.
+func IsWorktreeRoot(repo string) (bool, error) {
+	commonOut, _, commonCode, err := run(repo, "rev-parse", "--git-common-dir")
+	if err != nil {
+		return false, err
+	}
+	if commonCode != 0 {
+		return false, nil
+	}
+	dirOut, _, dirCode, err := run(repo, "rev-parse", "--git-dir")
+	if err != nil {
+		return false, err
+	}
+	if dirCode != 0 {
+		return false, nil
+	}
+	return commonOut == dirOut, nil
+}
