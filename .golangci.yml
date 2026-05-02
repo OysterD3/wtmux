@@ -12,10 +12,9 @@ linters:
     - ineffassign
     - staticcheck
     - unused
-
-issues:
-  exclude-dirs:
-    - dist
-    - node_modules
-    - src
-    - tests
+  exclusions:
+    paths:
+      - dist
+      - node_modules
+      - src
+      - tests
