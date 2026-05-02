@@ -4,3 +4,13 @@
 // (zero-value, nil) for read functions and as a wrapped error for write
 // functions. Tests require git on PATH (TestMain hard-fails otherwise).
 package git
+
+// CheckRefFormat reports whether name is a valid git branch name, per
+// `git check-ref-format --branch`. No working directory is required.
+func CheckRefFormat(name string) (bool, error) {
+	_, _, code, err := run("", "check-ref-format", "--branch", name)
+	if err != nil {
+		return false, err
+	}
+	return code == 0, nil
+}
