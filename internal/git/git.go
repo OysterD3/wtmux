@@ -193,3 +193,16 @@ func WorktreeAddExisting(repo, path, branch string) error {
 	}
 	return nil
 }
+
+// WorktreeRemove removes a linked worktree at wtPath without --force.
+// Runs `git worktree remove <wtPath>`.
+func WorktreeRemove(repo, wtPath string) error {
+	_, stderr, code, err := run(repo, "worktree", "remove", wtPath)
+	if err != nil {
+		return err
+	}
+	if code != 0 {
+		return fmt.Errorf("git worktree remove failed in %s: %s", repo, stderr)
+	}
+	return nil
+}

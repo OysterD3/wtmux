@@ -306,3 +306,14 @@ func TestWorktreeAddExisting(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, info.Mode().IsRegular())
 }
+
+func TestWorktreeRemove(t *testing.T) {
+	repo := initRepo(t)
+	wt := filepath.Join(t.TempDir(), "to-remove-wt")
+	mustGit(t, repo, "worktree", "add", "-b", "feat", wt)
+	require.DirExists(t, wt)
+
+	err := WorktreeRemove(repo, wt)
+	require.NoError(t, err)
+	assert.NoDirExists(t, wt)
+}
