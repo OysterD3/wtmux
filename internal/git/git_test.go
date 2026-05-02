@@ -292,3 +292,17 @@ func TestWorktreeAddNew_FailsOnExistingPath(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "git worktree add failed")
 }
+
+func TestWorktreeAddExisting(t *testing.T) {
+	repo := initRepo(t)
+	// Create a branch first (without a worktree).
+	mustGit(t, repo, "branch", "feat")
+	wt := filepath.Join(t.TempDir(), "existing-wt")
+
+	err := WorktreeAddExisting(repo, wt, "feat")
+	require.NoError(t, err)
+
+	info, err := os.Stat(filepath.Join(wt, ".git"))
+	require.NoError(t, err)
+	assert.True(t, info.Mode().IsRegular())
+}

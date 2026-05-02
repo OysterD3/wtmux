@@ -180,3 +180,16 @@ func WorktreeAddNew(repo, path, branch, base string) error {
 	}
 	return nil
 }
+
+// WorktreeAddExisting checks out an existing branch into a new linked
+// worktree at path. Runs `git worktree add <path> <branch>`.
+func WorktreeAddExisting(repo, path, branch string) error {
+	_, stderr, code, err := run(repo, "worktree", "add", path, branch)
+	if err != nil {
+		return err
+	}
+	if code != 0 {
+		return fmt.Errorf("git worktree add failed in %s: %s", repo, stderr)
+	}
+	return nil
+}
