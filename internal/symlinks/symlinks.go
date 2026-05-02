@@ -43,7 +43,10 @@ type ReplicateInputs struct {
 // under in.Repo, one per entry in in.Items. Each item produces exactly one
 // SymlinkResult in the returned slice (in input order). Missing sources and
 // pre-existing targets are reported via Action; non-IsNotExist errors
-// propagate immediately and the caller is responsible for any rollback.
+// propagate immediately and the caller is responsible for any rollback. On
+// error the returned slice is nil; callers wanting to undo partial work
+// should pass the full Items slice to Remove (the anti-foot-gun there
+// skips entries that aren't symlinks).
 func Replicate(in ReplicateInputs) ([]SymlinkResult, error) {
 	results := make([]SymlinkResult, 0, len(in.Items))
 	for _, item := range in.Items {
