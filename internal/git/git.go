@@ -229,3 +229,17 @@ func WorktreePrune(repo string) error {
 	_, _, _, err := run(repo, "worktree", "prune")
 	return err
 }
+
+// DeleteBranch deletes a fully-merged branch via `git branch -d <branch>`.
+// Returns an error if the branch is not fully merged (use DeleteBranchForce
+// to bypass).
+func DeleteBranch(repo, branch string) error {
+	_, stderr, code, err := run(repo, "branch", "-d", branch)
+	if err != nil {
+		return err
+	}
+	if code != 0 {
+		return fmt.Errorf("git branch -d failed in %s: %s", repo, stderr)
+	}
+	return nil
+}

@@ -349,3 +349,34 @@ func TestWorktreePrune_Stale(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, listAfter, 1)
 }
+
+func TestDeleteBranch(t *testing.T) {
+	repo := initRepo(t)
+	// Create a fully-merged branch (points at HEAD), then delete it.
+	mustGit(t, repo, "branch", "tmp")
+
+	exists, err := BranchExists(repo, "tmp")
+	require.NoError(t, err)
+	require.True(t, exists)
+
+	err = DeleteBranch(repo, "tmp")
+	require.NoError(t, err)
+
+	exists, err = BranchExists(repo, "tmp")
+	require.NoError(t, err)
+	assert.False(t, exists)
+}
+
+func TestDeleteBranch_RefusesUnmerged(t *testing.T) {
+	repo := initRepo(t)
+	// Create branch with a commit not on main → -d should refuse.
+	mustGit(t, repo, "checkout", "-b", "with-commit")
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "f.txt"), []byte("x"), 0o644))
+	mustGit(t, repo, "add", "f.txt")
+	mustGit(t, repo, "commit", "-m", "extra")
+	mustGit(t, repo, "checkout", "main")
+
+	err := DeleteBranch(repo, "with-commit")
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "git branch -d failed")
+}
