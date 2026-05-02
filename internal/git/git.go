@@ -49,3 +49,19 @@ func IsWorktreeRoot(repo string) (bool, error) {
 	}
 	return commonOut == dirOut, nil
 }
+
+// GetCurrentBranch returns the current branch name. ok is false (with err
+// == nil) on detached HEAD. Non-nil err only on spawn failure.
+func GetCurrentBranch(repo string) (branch string, ok bool, err error) {
+	stdout, _, code, err := run(repo, "symbolic-ref", "--short", "-q", "HEAD")
+	if err != nil {
+		return "", false, err
+	}
+	if code != 0 {
+		return "", false, nil
+	}
+	if stdout == "" {
+		return "", false, nil
+	}
+	return stdout, true, nil
+}

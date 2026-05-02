@@ -120,3 +120,28 @@ func TestIsWorktreeRoot_Linked(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, got)
 }
+
+func TestGetCurrentBranch_OnBranch(t *testing.T) {
+	repo := initRepo(t)
+
+	got, ok, err := GetCurrentBranch(repo)
+	require.NoError(t, err)
+	require.True(t, ok)
+	assert.Equal(t, "main", got)
+}
+
+func TestGetCurrentBranch_DetachedHead(t *testing.T) {
+	repo := initRepo(t)
+	// Resolve HEAD to a SHA, then check it out detached.
+	cmd := exec.Command("git", "rev-parse", "HEAD")
+	cmd.Dir = repo
+	out, err := cmd.Output()
+	require.NoError(t, err)
+	sha := string(out[:len(out)-1]) // strip trailing newline
+	mustGit(t, repo, "checkout", "--detach", sha)
+
+	got, ok, err := GetCurrentBranch(repo)
+	require.NoError(t, err)
+	assert.False(t, ok)
+	assert.Empty(t, got)
+}
