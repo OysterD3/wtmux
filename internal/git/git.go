@@ -85,3 +85,13 @@ func HasRef(repo, ref string) (bool, error) {
 	}
 	return code == 0, nil
 }
+
+// StatusPorcelain returns the trimmed stdout of `git status --porcelain`.
+// Empty string means a clean working tree.
+func StatusPorcelain(repo string) (string, error) {
+	stdout, _, _, err := run(repo, "status", "--porcelain")
+	if err != nil {
+		return "", err
+	}
+	return stdout, nil
+}

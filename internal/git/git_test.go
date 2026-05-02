@@ -177,3 +177,20 @@ func TestHasRef_False(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, got)
 }
+
+func TestStatusPorcelain_Clean(t *testing.T) {
+	repo := initRepo(t)
+
+	got, err := StatusPorcelain(repo)
+	require.NoError(t, err)
+	assert.Empty(t, got)
+}
+
+func TestStatusPorcelain_Dirty(t *testing.T) {
+	repo := initRepo(t)
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "new.txt"), []byte("hi"), 0o644))
+
+	got, err := StatusPorcelain(repo)
+	require.NoError(t, err)
+	assert.Contains(t, got, "?? new.txt")
+}
