@@ -3,6 +3,7 @@
 package agents
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 )
@@ -104,7 +105,7 @@ type ResolveInput struct {
 func ResolveStrategy(in ResolveInput) ResolvedStrategy {
 	if len(in.AddDirArgs) > 0 {
 		if in.Agent != "" && in.Warn != nil {
-			in.Warn("addDirArgs overrides agent \"" + string(in.Agent) + "\"")
+			in.Warn(fmt.Sprintf("addDirArgs overrides agent %q", in.Agent))
 		}
 		return ResolvedStrategy{
 			Kind:     StrategyFlag,
@@ -114,18 +115,15 @@ func ResolveStrategy(in ResolveInput) ResolvedStrategy {
 	}
 
 	if in.Agent != "" {
-		s := Registry[in.Agent]
-		if s.Kind == StrategyFlag {
-			return ResolvedStrategy{
-				Kind:     StrategyFlag,
-				FlagArgs: s.Args,
-				Source:   SourceAgent,
-			}
+		if s, ok := Registry[in.Agent]; ok {
+			return resolvedFrom(in.Agent, s, SourceAgent)
 		}
-		return ResolvedStrategy{
-			Kind:    StrategyNone,
-			Source:  SourceAgent,
-			AgentID: in.Agent,
+		// Unknown agent: bare Registry[in.Agent] would return a zero-value
+		// Strategy whose Kind == StrategyFlag (iota 0) with FlagArgs nil,
+		// which silently drops every sibling at expansion time. Warn and
+		// fall through to basename detection instead.
+		if in.Warn != nil {
+			in.Warn(fmt.Sprintf("agent %q is not registered; falling back to basename detection", in.Agent))
 		}
 	}
 
@@ -136,22 +134,18 @@ func ResolveStrategy(in ResolveInput) ResolvedStrategy {
 			resolved = alias
 		}
 		if s, ok := Registry[resolved]; ok {
-			if s.Kind == StrategyFlag {
-				return ResolvedStrategy{
-					Kind:     StrategyFlag,
-					FlagArgs: s.Args,
-					Source:   SourceBasename,
-				}
-			}
-			return ResolvedStrategy{
-				Kind:    StrategyNone,
-				Source:  SourceBasename,
-				AgentID: resolved,
-			}
+			return resolvedFrom(resolved, s, SourceBasename)
 		}
 	}
 
 	return ResolvedStrategy{Kind: StrategyPositional, Source: SourceFallback}
+}
+
+func resolvedFrom(id AgentID, s Strategy, src ResolvedStrategySource) ResolvedStrategy {
+	if s.Kind == StrategyFlag {
+		return ResolvedStrategy{Kind: StrategyFlag, FlagArgs: s.Args, Source: src}
+	}
+	return ResolvedStrategy{Kind: StrategyNone, Source: src, AgentID: id}
 }
 
 // ExpandAddDirArgs expands a flag-template across siblings. For each sibling,

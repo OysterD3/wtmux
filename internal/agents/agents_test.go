@@ -75,6 +75,27 @@ func TestResolveStrategy_UnknownBasenameFallsBack(t *testing.T) {
 	assert.Equal(t, SourceFallback, got.Source)
 }
 
+func TestResolveStrategy_UnknownAgentFallsThroughToBasename(t *testing.T) {
+	var warned string
+	got := ResolveStrategy(ResolveInput{
+		LaunchCommand: []string{"/usr/local/bin/cursor"},
+		Agent:         AgentID("clade"), // typo of "claude"
+		Warn:          func(m string) { warned = m },
+	})
+	assert.Equal(t, StrategyFlag, got.Kind)
+	assert.Equal(t, []string{"--add", "{path}"}, got.FlagArgs)
+	assert.Equal(t, SourceBasename, got.Source)
+	assert.Contains(t, warned, "not registered")
+}
+
+func TestResolveStrategy_UnknownAgentWithNoBasenameFallsBackToPositional(t *testing.T) {
+	got := ResolveStrategy(ResolveInput{
+		Agent: AgentID("clade"),
+	})
+	assert.Equal(t, StrategyPositional, got.Kind)
+	assert.Equal(t, SourceFallback, got.Source)
+}
+
 func TestExpandAddDirArgs(t *testing.T) {
 	t.Run("expands one sibling", func(t *testing.T) {
 		got := ExpandAddDirArgs([]string{"--add-dir", "{path}"}, []string{"/abs/sib"})
