@@ -5,6 +5,8 @@
 // functions. Tests require git on PATH (TestMain hard-fails otherwise).
 package git
 
+import "strings"
+
 // CheckRefFormat reports whether name is a valid git branch name, per
 // `git check-ref-format --branch`. No working directory is required.
 func CheckRefFormat(name string) (bool, error) {
@@ -94,4 +96,24 @@ func StatusPorcelain(repo string) (string, error) {
 		return "", err
 	}
 	return stdout, nil
+}
+
+// StashList returns the trimmed non-empty lines of `git stash list`.
+// Returns empty (nil) on a repo with no stashes.
+func StashList(repo string) ([]string, error) {
+	stdout, _, _, err := run(repo, "stash", "list")
+	if err != nil {
+		return nil, err
+	}
+	if stdout == "" {
+		return nil, nil
+	}
+	var out []string
+	for _, line := range strings.Split(stdout, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out, nil
 }
