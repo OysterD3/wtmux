@@ -65,3 +65,13 @@ func GetCurrentBranch(repo string) (branch string, ok bool, err error) {
 	}
 	return stdout, true, nil
 }
+
+// BranchExists reports whether a local branch named name exists in repo
+// (i.e. refs/heads/<name>).
+func BranchExists(repo, name string) (bool, error) {
+	_, _, code, err := run(repo, "show-ref", "--verify", "--quiet", "refs/heads/"+name)
+	if err != nil {
+		return false, err
+	}
+	return code == 0, nil
+}

@@ -145,3 +145,19 @@ func TestGetCurrentBranch_DetachedHead(t *testing.T) {
 	assert.False(t, ok)
 	assert.Empty(t, got)
 }
+
+func TestBranchExists_True(t *testing.T) {
+	repo := initRepo(t)
+
+	got, err := BranchExists(repo, "main")
+	require.NoError(t, err)
+	assert.True(t, got)
+}
+
+func TestBranchExists_False(t *testing.T) {
+	repo := initRepo(t)
+
+	got, err := BranchExists(repo, "nonexistent")
+	require.NoError(t, err)
+	assert.False(t, got)
+}
