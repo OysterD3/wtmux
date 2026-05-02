@@ -329,3 +329,23 @@ func TestWorktreeRemoveForce(t *testing.T) {
 	require.NoError(t, err)
 	assert.NoDirExists(t, wt)
 }
+
+func TestWorktreePrune_Stale(t *testing.T) {
+	repo := initRepo(t)
+	wt := filepath.Join(t.TempDir(), "stale-wt")
+	mustGit(t, repo, "worktree", "add", "-b", "feat", wt)
+	// Manually delete the worktree directory; git's metadata is now stale.
+	require.NoError(t, os.RemoveAll(wt))
+
+	// Sanity: a stale entry still appears in `worktree list` until prune.
+	listBefore, err := ListWorktrees(repo)
+	require.NoError(t, err)
+	require.Len(t, listBefore, 2)
+
+	err = WorktreePrune(repo)
+	require.NoError(t, err)
+
+	listAfter, err := ListWorktrees(repo)
+	require.NoError(t, err)
+	require.Len(t, listAfter, 1)
+}

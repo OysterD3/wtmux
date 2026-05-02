@@ -219,3 +219,13 @@ func WorktreeRemoveForce(repo, wtPath string) error {
 	}
 	return nil
 }
+
+// WorktreePrune removes worktree entries whose directories no longer exist.
+// Best-effort: nonzero git exit codes are swallowed (matches the TS
+// `await run(...)` without exit-code check). Spawn errors (e.g. git binary
+// missing) are still returned, since silently dropping those would be a
+// foot-gun.
+func WorktreePrune(repo string) error {
+	_, _, _, err := run(repo, "worktree", "prune")
+	return err
+}
