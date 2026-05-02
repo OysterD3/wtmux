@@ -14,3 +14,17 @@ func CheckRefFormat(name string) (bool, error) {
 	}
 	return code == 0, nil
 }
+
+// GetToplevel returns the top-level path of the git working tree containing
+// cwd. ok is false (with err == nil) when cwd is not inside any git repo.
+// Non-nil err only on spawn failure.
+func GetToplevel(cwd string) (path string, ok bool, err error) {
+	stdout, _, code, err := run(cwd, "rev-parse", "--show-toplevel")
+	if err != nil {
+		return "", false, err
+	}
+	if code != 0 {
+		return "", false, nil
+	}
+	return stdout, true, nil
+}
