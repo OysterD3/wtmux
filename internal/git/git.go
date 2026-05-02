@@ -206,3 +206,16 @@ func WorktreeRemove(repo, wtPath string) error {
 	}
 	return nil
 }
+
+// WorktreeRemoveForce removes a linked worktree at wtPath, forcing removal
+// even if it has uncommitted changes. Runs `git worktree remove --force <wtPath>`.
+func WorktreeRemoveForce(repo, wtPath string) error {
+	_, stderr, code, err := run(repo, "worktree", "remove", "--force", wtPath)
+	if err != nil {
+		return err
+	}
+	if code != 0 {
+		return fmt.Errorf("git worktree remove failed in %s: %s", repo, stderr)
+	}
+	return nil
+}

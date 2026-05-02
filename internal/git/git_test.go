@@ -317,3 +317,15 @@ func TestWorktreeRemove(t *testing.T) {
 	require.NoError(t, err)
 	assert.NoDirExists(t, wt)
 }
+
+func TestWorktreeRemoveForce(t *testing.T) {
+	repo := initRepo(t)
+	wt := filepath.Join(t.TempDir(), "force-remove-wt")
+	mustGit(t, repo, "worktree", "add", "-b", "feat", wt)
+	// Make the worktree dirty so plain `worktree remove` would refuse.
+	require.NoError(t, os.WriteFile(filepath.Join(wt, "dirty.txt"), []byte("x"), 0o644))
+
+	err := WorktreeRemoveForce(repo, wt)
+	require.NoError(t, err)
+	assert.NoDirExists(t, wt)
+}
