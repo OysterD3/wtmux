@@ -117,3 +117,32 @@ func StashList(repo string) ([]string, error) {
 	}
 	return out, nil
 }
+
+// UnpushedCommits returns the trimmed non-empty lines of
+// `git log @{u}..HEAD --oneline`. Returns empty (nil) when no upstream is
+// configured for the current branch (e.g. a freshly created branch with no
+// `git push -u`).
+func UnpushedCommits(repo string) ([]string, error) {
+	_, _, code, err := run(repo, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+	if err != nil {
+		return nil, err
+	}
+	if code != 0 {
+		return nil, nil
+	}
+	stdout, _, _, err := run(repo, "log", "@{u}..HEAD", "--oneline")
+	if err != nil {
+		return nil, err
+	}
+	if stdout == "" {
+		return nil, nil
+	}
+	var out []string
+	for _, line := range strings.Split(stdout, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out, nil
+}

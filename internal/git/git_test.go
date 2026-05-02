@@ -218,3 +218,33 @@ func TestStashList_NonEmpty(t *testing.T) {
 	require.Len(t, got, 1)
 	assert.Contains(t, got[0], "stash@{0}")
 }
+
+func TestUnpushedCommits_NoUpstream(t *testing.T) {
+	repo := initRepo(t)
+
+	got, err := UnpushedCommits(repo)
+	require.NoError(t, err)
+	assert.Empty(t, got)
+}
+
+func TestUnpushedCommits_WithUpstream(t *testing.T) {
+	// Create a bare upstream, add it as the remote, push initial commit,
+	// then make a new commit locally that hasn't been pushed.
+	upstream := filepath.Join(t.TempDir(), "upstream.git")
+	cmd := exec.Command("git", "init", "--bare", upstream)
+	require.NoError(t, cmd.Run())
+
+	repo := initRepo(t)
+	mustGit(t, repo, "remote", "add", "origin", upstream)
+	mustGit(t, repo, "push", "-u", "origin", "main")
+
+	// Local commit that isn't pushed yet.
+	require.NoError(t, os.WriteFile(filepath.Join(repo, "x.txt"), []byte("x"), 0o644))
+	mustGit(t, repo, "add", "x.txt")
+	mustGit(t, repo, "commit", "-m", "local-only")
+
+	got, err := UnpushedCommits(repo)
+	require.NoError(t, err)
+	require.Len(t, got, 1)
+	assert.Contains(t, got[0], "local-only")
+}
