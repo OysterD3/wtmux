@@ -146,3 +146,17 @@ func UnpushedCommits(repo string) ([]string, error) {
 	}
 	return out, nil
 }
+
+// ListWorktrees returns every worktree (main + linked) attached to repo, by
+// shelling out to `git worktree list --porcelain` and parsing the result.
+// Returns empty (nil) on git failure (matches TS).
+func ListWorktrees(repo string) ([]WorktreeEntry, error) {
+	stdout, _, code, err := run(repo, "worktree", "list", "--porcelain")
+	if err != nil {
+		return nil, err
+	}
+	if code != 0 {
+		return nil, nil
+	}
+	return parseWorktreePorcelain(stdout), nil
+}

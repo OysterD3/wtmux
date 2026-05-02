@@ -248,3 +248,23 @@ func TestUnpushedCommits_WithUpstream(t *testing.T) {
 	require.Len(t, got, 1)
 	assert.Contains(t, got[0], "local-only")
 }
+
+func TestListWorktrees_SingleAndLinked(t *testing.T) {
+	repo := initRepo(t)
+	wtPath := filepath.Join(t.TempDir(), "linked-wt")
+	mustGit(t, repo, "worktree", "add", "-b", "feat", wtPath)
+
+	got, err := ListWorktrees(repo)
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+
+	// Order from `git worktree list --porcelain` is main then linked.
+	assert.Equal(t, "main", got[0].Branch)
+	assert.False(t, got[0].Detached)
+	assert.NotEmpty(t, got[0].Head)
+
+	assert.Equal(t, "feat", got[1].Branch)
+	assert.False(t, got[1].Detached)
+	assert.NotEmpty(t, got[1].Head)
+	assert.Equal(t, resolveSymlinks(t, wtPath), resolveSymlinks(t, got[1].Worktree))
+}
