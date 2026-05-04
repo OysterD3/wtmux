@@ -55,7 +55,7 @@ func runRm(name string, flags rmFlags) error {
 		GroupFlag: pf.group,
 	})
 	if err != nil {
-		return wtmuxerrors.New(wtmuxerrors.KindUser, "%s", err.Error())
+		return wtmuxerrors.Wrapf(wtmuxerrors.KindUser, err, "%s", err.Error())
 	}
 	if resolved.Kind == group.KindOutside {
 		return wtmuxerrors.New(wtmuxerrors.KindPrecondition, "cwd is not inside any git repository")

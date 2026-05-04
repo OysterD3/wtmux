@@ -39,3 +39,22 @@ func TestNewFormat(t *testing.T) {
 		t.Fatalf("kind not preserved")
 	}
 }
+
+func TestWrapfPreservesCause(t *testing.T) {
+	sentinel := errors.New("group: sentinel")
+	wrapped := wtmuxerrors.Wrapf(wtmuxerrors.KindUser, sentinel, "human-readable: %s", sentinel.Error())
+
+	if !errors.Is(wrapped, sentinel) {
+		t.Fatalf("errors.Is should match the wrapped sentinel through *Error.Unwrap")
+	}
+	if wrapped.Error() != "human-readable: group: sentinel" {
+		t.Fatalf("unexpected message: %q", wrapped.Error())
+	}
+	if wrapped.Kind != wtmuxerrors.KindUser {
+		t.Fatalf("kind not preserved")
+	}
+	// Wrapping nil is allowed and should not match anything via errors.Is.
+	if errors.Is(wtmuxerrors.New(wtmuxerrors.KindUser, "no cause"), sentinel) {
+		t.Fatalf("New() should not match unrelated sentinels")
+	}
+}

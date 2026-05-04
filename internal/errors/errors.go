@@ -25,18 +25,32 @@ const (
 	KindInternal
 )
 
-// Error is wtmux's tagged CLI error.
+// Error is wtmux's tagged CLI error. Cause is optional and only used so
+// errors.Is / errors.As checks against sentinels (e.g. ErrGroupFlagNotFound)
+// continue to match after the CLI rephrases the message.
 type Error struct {
-	Msg  string
-	Kind Kind
+	Msg   string
+	Kind  Kind
+	Cause error
 }
 
 // Error implements the error interface.
 func (e *Error) Error() string { return e.Msg }
 
-// New returns a new *Error. Format is fmt.Sprintf-style.
+// Unwrap returns the wrapped cause (or nil). Lets errors.Is/As traverse
+// past a *Error.
+func (e *Error) Unwrap() error { return e.Cause }
+
+// New returns a new *Error with no wrapped cause. Format is fmt.Sprintf-style.
 func New(kind Kind, format string, a ...any) *Error {
 	return &Error{Msg: fmt.Sprintf(format, a...), Kind: kind}
+}
+
+// Wrapf returns a new *Error that wraps cause and formats msg via fmt.Sprintf.
+// Use this when the source error carries sentinels (errors.Is targets) the
+// outer caller may want to inspect.
+func Wrapf(kind Kind, cause error, format string, a ...any) *Error {
+	return &Error{Msg: fmt.Sprintf(format, a...), Kind: kind, Cause: cause}
 }
 
 // ExitCodeFor returns the process exit code for err. Unwraps via

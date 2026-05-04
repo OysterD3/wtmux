@@ -72,7 +72,7 @@ func runLs() error {
 		GroupFlag: pf.group,
 	})
 	if err != nil {
-		return wtmuxerrors.New(wtmuxerrors.KindUser, "%s", err.Error())
+		return wtmuxerrors.Wrapf(wtmuxerrors.KindUser, err, "%s", err.Error())
 	}
 	if resolved.Kind == group.KindOutside {
 		return wtmuxerrors.New(wtmuxerrors.KindPrecondition, "cwd is not inside any git repository")
@@ -230,7 +230,9 @@ func pad(s string, width int) string {
 }
 
 // stateGlyph returns a colored single-character marker summarizing the
-// worktree's state.
+// worktree's working-tree state. Upstream divergence is shown by the sync
+// column (↑N / ↓N), not here — keeping the glyph dimensions disjoint
+// avoids users seeing two arrows on the same row.
 func stateGlyph(s lsRepoStatus, sty styler) string {
 	if !s.present {
 		return sty.dim("·")
@@ -240,9 +242,6 @@ func stateGlyph(s lsRepoStatus, sty styler) string {
 	}
 	if s.untracked > 0 {
 		return sty.magenta("◌")
-	}
-	if s.hasUpstream && s.ahead > 0 {
-		return sty.cyan("↑")
 	}
 	return sty.green("○")
 }
