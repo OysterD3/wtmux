@@ -16,3 +16,16 @@ func (c *Config) applyDefaults() {
 		c.LaunchCommand = []string{"claude"}
 	}
 }
+
+// Default returns a fresh Config populated with wtmux defaults and no
+// groups. Used by the CLI when no config file is discoverable.
+func Default() *Config {
+	c := &Config{}
+	c.applyDefaults()
+	return c
+}
+
+// ApplyDefaults is the exported counterpart of applyDefaults, for callers
+// outside the package that need to fill zero-valued top-level fields
+// before validating.
+func (c *Config) ApplyDefaults() { c.applyDefaults() }

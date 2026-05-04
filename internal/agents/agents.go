@@ -53,6 +53,25 @@ var Registry = map[AgentID]Strategy{
 	AgentQoder:    {Kind: StrategyNone},
 }
 
+// registryOrder mirrors the TS Object.keys(AGENT_REGISTRY) order — Go map
+// iteration order is randomized, so callers that want stable display order
+// (e.g. the agent-select TUI) use RegistryIDs.
+var registryOrder = []AgentID{
+	AgentClaude,
+	AgentCodex,
+	AgentCursor,
+	AgentVSCode,
+	AgentOpenCode,
+	AgentQoder,
+}
+
+// RegistryIDs returns every known AgentID in declaration order.
+func RegistryIDs() []AgentID {
+	out := make([]AgentID, len(registryOrder))
+	copy(out, registryOrder)
+	return out
+}
+
 // basenameAlias maps a launch command's basename to a canonical AgentID when
 // the names don't match (e.g., qoder's CLI is named "qodercli").
 var basenameAlias = map[string]AgentID{

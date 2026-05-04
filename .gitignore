@@ -5,3 +5,4 @@ pnpm-debug.log*
 .worktrees/
 docs/
 /wtmux
+/bin/

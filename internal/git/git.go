@@ -101,6 +101,31 @@ func StatusPorcelain(repo string) (string, error) {
 	return stdout, nil
 }
 
+// PorcelainCounts parses the output of `git status --porcelain` and returns
+// (tracked, untracked) counts. tracked covers every line that does not start
+// with "??" (i.e. any staged or unstaged change to a tracked path); untracked
+// covers lines beginning with "??".
+func PorcelainCounts(repo string) (tracked, untracked int, err error) {
+	stdout, err := StatusPorcelain(repo)
+	if err != nil {
+		return 0, 0, err
+	}
+	if stdout == "" {
+		return 0, 0, nil
+	}
+	for _, line := range strings.Split(stdout, "\n") {
+		if line == "" {
+			continue
+		}
+		if strings.HasPrefix(line, "??") {
+			untracked++
+		} else {
+			tracked++
+		}
+	}
+	return tracked, untracked, nil
+}
+
 // StashList returns the trimmed non-empty lines of `git stash list`.
 // Returns empty (nil) on a repo with no stashes.
 func StashList(repo string) ([]string, error) {
@@ -119,6 +144,78 @@ func StashList(repo string) ([]string, error) {
 		}
 	}
 	return out, nil
+}
+
+// AheadBehind reports how many commits the current branch is ahead of and
+// behind its upstream. hasUpstream is false (with all counts zero, err nil)
+// when no upstream is configured. Non-nil err only on spawn failure.
+func AheadBehind(repo string) (ahead, behind int, hasUpstream bool, err error) {
+	_, _, code, err := run(repo, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+	if err != nil {
+		return 0, 0, false, err
+	}
+	if code != 0 {
+		return 0, 0, false, nil
+	}
+	stdout, _, code, err := run(repo, "rev-list", "--left-right", "--count", "@{u}...HEAD")
+	if err != nil {
+		return 0, 0, true, err
+	}
+	if code != 0 {
+		return 0, 0, true, nil
+	}
+	fields := strings.Fields(stdout)
+	if len(fields) != 2 {
+		return 0, 0, true, nil
+	}
+	b, err1 := parseUint(fields[0])
+	a, err2 := parseUint(fields[1])
+	if err1 != nil || err2 != nil {
+		return 0, 0, true, nil
+	}
+	return a, b, true, nil
+}
+
+// DiffShortStat returns counts from `git diff HEAD --shortstat`, covering
+// both staged and unstaged tracked changes. Untracked files are not included.
+// Returns zeros when the working tree is clean. Non-nil err only on spawn failure.
+func DiffShortStat(repo string) (files, insertions, deletions int, err error) {
+	stdout, _, code, err := run(repo, "diff", "HEAD", "--shortstat")
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	if code != 0 || stdout == "" {
+		return 0, 0, 0, nil
+	}
+	for _, part := range strings.Split(stdout, ",") {
+		part = strings.TrimSpace(part)
+		switch {
+		case strings.Contains(part, "file"):
+			n, _ := parseUint(strings.Fields(part)[0])
+			files = n
+		case strings.Contains(part, "insertion"):
+			n, _ := parseUint(strings.Fields(part)[0])
+			insertions = n
+		case strings.Contains(part, "deletion"):
+			n, _ := parseUint(strings.Fields(part)[0])
+			deletions = n
+		}
+	}
+	return files, insertions, deletions, nil
+}
+
+func parseUint(s string) (int, error) {
+	n := 0
+	if s == "" {
+		return 0, fmt.Errorf("empty")
+	}
+	for _, r := range s {
+		if r < '0' || r > '9' {
+			return 0, fmt.Errorf("non-digit")
+		}
+		n = n*10 + int(r-'0')
+	}
+	return n, nil
 }
 
 // UnpushedCommits returns the trimmed non-empty lines of
