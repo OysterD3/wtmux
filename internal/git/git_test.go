@@ -195,30 +195,6 @@ func TestStatusPorcelain_Dirty(t *testing.T) {
 	assert.Contains(t, got, "?? new.txt")
 }
 
-func TestStashList_Empty(t *testing.T) {
-	repo := initRepo(t)
-
-	got, err := StashList(repo)
-	require.NoError(t, err)
-	assert.Empty(t, got)
-}
-
-func TestStashList_NonEmpty(t *testing.T) {
-	repo := initRepo(t)
-	// Create a tracked file, modify it, stash.
-	tracked := filepath.Join(repo, "f.txt")
-	require.NoError(t, os.WriteFile(tracked, []byte("v1"), 0o644))
-	mustGit(t, repo, "add", "f.txt")
-	mustGit(t, repo, "commit", "-m", "add f")
-	require.NoError(t, os.WriteFile(tracked, []byte("v2"), 0o644))
-	mustGit(t, repo, "stash")
-
-	got, err := StashList(repo)
-	require.NoError(t, err)
-	require.Len(t, got, 1)
-	assert.Contains(t, got[0], "stash@{0}")
-}
-
 func TestUnpushedCommits_NoUpstream(t *testing.T) {
 	repo := initRepo(t)
 

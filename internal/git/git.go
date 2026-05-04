@@ -126,26 +126,6 @@ func PorcelainCounts(repo string) (tracked, untracked int, err error) {
 	return tracked, untracked, nil
 }
 
-// StashList returns the trimmed non-empty lines of `git stash list`.
-// Returns empty (nil) on a repo with no stashes.
-func StashList(repo string) ([]string, error) {
-	stdout, _, _, err := run(repo, "stash", "list")
-	if err != nil {
-		return nil, err
-	}
-	if stdout == "" {
-		return nil, nil
-	}
-	var out []string
-	for _, line := range strings.Split(stdout, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if trimmed != "" {
-			out = append(out, trimmed)
-		}
-	}
-	return out, nil
-}
-
 // AheadBehind reports how many commits the current branch is ahead of and
 // behind its upstream. hasUpstream is false (with all counts zero, err nil)
 // when no upstream is configured. Non-nil err only on spawn failure.

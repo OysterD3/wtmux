@@ -12,7 +12,6 @@ import (
 
 	"github.com/OysterD3/wtmux/internal/config"
 	wtmuxerrors "github.com/OysterD3/wtmux/internal/errors"
-	wtlog "github.com/OysterD3/wtmux/internal/log"
 	"github.com/OysterD3/wtmux/internal/tui"
 )
 
@@ -184,6 +183,3 @@ func askEmptyFallback() (*config.Config, bool, error) {
 	c.Groups = nil
 	return c, true, nil
 }
-
-// silence unused-import warning if log isn't used here (it stays for parity)
-var _ = wtlog.Info

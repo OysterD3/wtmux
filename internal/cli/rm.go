@@ -10,6 +10,7 @@ import (
 	"github.com/OysterD3/wtmux/internal/git"
 	"github.com/OysterD3/wtmux/internal/group"
 	wtlog "github.com/OysterD3/wtmux/internal/log"
+	"github.com/OysterD3/wtmux/internal/paths"
 )
 
 type rmFlags struct {
@@ -134,14 +135,17 @@ func runRm(name string, flags rmFlags) error {
 // findWorktreeByBranch returns the path of repo's linked worktree checked
 // out on branch, or "" if no such worktree exists. The repo's main
 // worktree is excluded so `rm <main-branch>` never tries to remove the
-// repo root.
+// repo root. We compare against the repo's symlink-resolved path because
+// `git worktree list` always emits realpath'd entries while repo here may
+// be a config-supplied path with symlinks.
 func findWorktreeByBranch(repo, branch string) (string, error) {
 	wts, err := git.ListWorktrees(repo)
 	if err != nil {
 		return "", err
 	}
+	repoReal := paths.RealpathSafe(repo)
 	for _, w := range wts {
-		if w.Branch == branch && w.Worktree != repo {
+		if w.Branch == branch && w.Worktree != repoReal {
 			return w.Worktree, nil
 		}
 	}

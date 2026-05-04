@@ -8,11 +8,13 @@ import (
 	"strings"
 
 	"github.com/mattn/go-isatty"
+	"github.com/mattn/go-runewidth"
 	"github.com/spf13/cobra"
 
 	wtmuxerrors "github.com/OysterD3/wtmux/internal/errors"
 	"github.com/OysterD3/wtmux/internal/git"
 	"github.com/OysterD3/wtmux/internal/group"
+	"github.com/OysterD3/wtmux/internal/paths"
 )
 
 // newLsCmd returns the `wtmux ls` cobra command.
@@ -84,8 +86,9 @@ func runLs() error {
 	}
 
 	type repoWts struct {
-		repo string
-		wts  []git.WorktreeEntry
+		repo     string // original (config-form) path, used for display + git commands
+		repoReal string // symlink-resolved path, used to compare against `git worktree list` output
+		wts      []git.WorktreeEntry
 	}
 	perRepoWts := make([]repoWts, 0, len(repos))
 	for _, r := range repos {
@@ -93,16 +96,16 @@ func runLs() error {
 		if err != nil {
 			return wtmuxerrors.New(wtmuxerrors.KindInternal, "git worktree list failed in %s: %s", r, err.Error())
 		}
-		perRepoWts = append(perRepoWts, repoWts{repo: r, wts: wts})
+		perRepoWts = append(perRepoWts, repoWts{repo: r, repoReal: paths.RealpathSafe(r), wts: wts})
 	}
 
 	nameSet := map[string]struct{}{}
 	for _, rw := range perRepoWts {
 		for _, w := range rw.wts {
-			if w.Branch == "" || w.Branch == "main" || w.Branch == "master" {
+			if w.Branch == "" {
 				continue
 			}
-			if w.Worktree == rw.repo {
+			if w.Worktree == rw.repoReal {
 				continue
 			}
 			nameSet[w.Branch] = struct{}{}
@@ -121,7 +124,7 @@ func runLs() error {
 			var match *git.WorktreeEntry
 			for i := range rw.wts {
 				w := &rw.wts[i]
-				if w.Branch == name && w.Worktree != rw.repo {
+				if w.Branch == name && w.Worktree != rw.repoReal {
 					match = w
 					break
 				}
@@ -196,10 +199,11 @@ func (s styler) blue(t string) string    { return s.wrap("34", t) }
 func (s styler) magenta(t string) string { return s.wrap("35", t) }
 func (s styler) cyan(t string) string    { return s.wrap("36", t) }
 
-// visualWidth returns the approximate display width of s, ignoring ANSI escape
-// sequences. Used for column padding.
+// visualWidth returns the display width of s, ignoring ANSI escape sequences
+// and using go-runewidth so wide / combining / zero-width characters are
+// counted correctly. Used for column padding.
 func visualWidth(s string) int {
-	n := 0
+	var b strings.Builder
 	in := false
 	for _, r := range s {
 		if in {
@@ -212,9 +216,9 @@ func visualWidth(s string) int {
 			in = true
 			continue
 		}
-		n++
+		b.WriteRune(r)
 	}
-	return n
+	return runewidth.StringWidth(b.String())
 }
 
 func pad(s string, width int) string {

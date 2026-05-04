@@ -57,3 +57,14 @@ func Exists(p string) bool {
 	_, err := os.Lstat(p)
 	return err == nil
 }
+
+// RealpathSafe returns filepath.EvalSymlinks(p), falling back to p itself on
+// any error (most often ENOENT for an unmounted but configured path). Use
+// this when comparing a config-supplied path against output from `git`,
+// which always returns symlink-resolved paths.
+func RealpathSafe(p string) string {
+	if r, err := filepath.EvalSymlinks(p); err == nil {
+		return r
+	}
+	return p
+}
