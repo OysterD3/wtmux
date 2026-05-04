@@ -341,11 +341,11 @@ func renderTable(w *os.File, rows []lsRow, multiRepo, useColor bool) {
 			}
 		}
 		cells = append(cells, c)
-		if w := visualWidth(c.name); w > maxName {
-			maxName = w
+		if vw := visualWidth(c.name); vw > maxName {
+			maxName = vw
 		}
-		if w := visualWidth(c.ch); w > maxCh {
-			maxCh = w
+		if vw := visualWidth(c.ch); vw > maxCh {
+			maxCh = vw
 		}
 	}
 	for _, c := range cells {

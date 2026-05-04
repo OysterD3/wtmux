@@ -48,7 +48,7 @@ brew install wtmux
 <details>
 <summary>Other install methods</summary>
 
-**`go install`** (requires Go 1.25+):
+**`go install`** (requires Go 1.26+):
 
 ```bash
 go install github.com/OysterD3/wtmux/cmd/wtmux@latest
