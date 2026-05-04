@@ -32,15 +32,29 @@ No AI agent has a hook or config to rewrite attached directory paths mid-session
 
 ## Install
 
+**Homebrew** (macOS / Linux):
+
+```bash
+brew install OysterD3/wtmux/wtmux
+```
+
+Or two-step, so daily upgrades are just `brew upgrade wtmux`:
+
+```bash
+brew tap OysterD3/wtmux
+brew install wtmux
+```
+
+<details>
+<summary>Other install methods</summary>
+
 **`go install`** (requires Go 1.25+):
 
 ```bash
 go install github.com/OysterD3/wtmux/cmd/wtmux@latest
 ```
 
-**Prebuilt binaries:**
-
-Download the tarball for your platform from [releases](https://github.com/OysterD3/wtmux/releases), extract, and put `wtmux` somewhere on your PATH.
+**Prebuilt binaries:** download the tarball for your platform from [releases](https://github.com/OysterD3/wtmux/releases), extract, and put `wtmux` somewhere on your PATH.
 
 **Build from source:**
 
@@ -49,6 +63,8 @@ git clone https://github.com/OysterD3/wtmux.git
 cd wtmux
 make install
 ```
+
+</details>
 
 > **Note:** versions ≤ 0.4.2 were distributed via npm. The npm package is deprecated; new releases ship as a single statically-linked Go binary.
 
