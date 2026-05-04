@@ -4,10 +4,24 @@ import (
 	"errors"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/OysterD3/wtmux/internal/config"
 	wtmuxerrors "github.com/OysterD3/wtmux/internal/errors"
 	wtlog "github.com/OysterD3/wtmux/internal/log"
 )
+
+// userArgs wraps a cobra.PositionalArgs validator so an arg-validation
+// failure (missing required arg, too many args) is tagged KindUser and
+// exits 1, instead of falling through to ExitCodeFor's default of 3.
+func userArgs(check cobra.PositionalArgs) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if err := check(cmd, args); err != nil {
+			return wtmuxerrors.Wrapf(wtmuxerrors.KindUser, err, "%s", err.Error())
+		}
+		return nil
+	}
+}
 
 // persistentFlags holds values bound to the root command's PersistentFlags.
 // Set by Cobra; read by command RunE callbacks.

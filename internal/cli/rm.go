@@ -26,7 +26,7 @@ func newRmCmd() *cobra.Command {
 		Short:         "Remove coordinated worktrees",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Args:          cobra.ExactArgs(1),
+		Args:          userArgs(cobra.ExactArgs(1)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			applyVerbose()
 			return runRm(args[0], flags)
@@ -86,6 +86,10 @@ func runRm(name string, flags rmFlags) error {
 	}
 
 	if len(targets) == 0 {
+		// Stay exit 0 so idempotent cleanup scripts (`wtmux rm $name` on a
+		// branch already gone) don't trip, but surface a stderr notice so
+		// typos are visible.
+		wtlog.Infof("no coordinated worktrees named %q in this group", name)
 		return nil
 	}
 

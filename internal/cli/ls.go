@@ -24,7 +24,7 @@ func newLsCmd() *cobra.Command {
 		Short:         "List coordinated worktrees in the current group",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Args:          cobra.NoArgs,
+		Args:          userArgs(cobra.NoArgs),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			applyVerbose()
 			return runLs()

@@ -27,7 +27,7 @@ func newRootCmd() *cobra.Command {
 		SilenceUsage:  true,
 		SilenceErrors: true,
 		Version:       Version(),
-		Args:          cobra.NoArgs,
+		Args:          userArgs(cobra.NoArgs),
 		Run: func(c *cobra.Command, _ []string) {
 			helpToStdout(rootHelp)
 		},

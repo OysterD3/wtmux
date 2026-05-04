@@ -32,7 +32,7 @@ func newNewCmd() *cobra.Command {
 		Short:         "Create coordinated worktrees and launch the agent",
 		SilenceUsage:  true,
 		SilenceErrors: true,
-		Args:          cobra.MinimumNArgs(1),
+		Args:          userArgs(cobra.MinimumNArgs(1)),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			applyVerbose()
 			extra := extractPassthrough(cmd, args)

@@ -164,11 +164,28 @@ func TestRmMissingNameArg(t *testing.T) {
 	dir := t.TempDir()
 	gitInitCommit(t, dir)
 	res := runWtmux(t, dir, "rm")
-	if res.code == 0 {
-		t.Fatalf("expected nonzero exit, got 0; stderr=%q", res.stderr)
+	if res.code != 1 {
+		t.Fatalf("exit=%d (want 1 user error) stderr=%q", res.code, res.stderr)
 	}
 	if !strings.Contains(res.stderr, "[wtmux]") {
 		t.Fatalf("expected [wtmux] prefix on stderr: %q", res.stderr)
+	}
+}
+
+func TestRmAbsentNameReportsToStderr(t *testing.T) {
+	dir := t.TempDir()
+	gitInitCommit(t, dir)
+	// No worktree named "ghost" exists. Should be exit 0 (idempotent) but
+	// stderr must surface the no-match so typos are visible.
+	res := runWtmux(t, dir, "rm", "ghost")
+	if res.code != 0 {
+		t.Fatalf("exit=%d (want 0; idempotent no-op) stderr=%q", res.code, res.stderr)
+	}
+	if res.stdout != "" {
+		t.Fatalf("expected empty stdout, got %q", res.stdout)
+	}
+	if !strings.Contains(res.stderr, "no coordinated worktrees named \"ghost\"") {
+		t.Fatalf("expected stderr no-match notice, got %q", res.stderr)
 	}
 }
 
@@ -230,8 +247,8 @@ func TestCreateMissingName(t *testing.T) {
 	dir := t.TempDir()
 	gitInitCommit(t, dir)
 	res := runWtmux(t, dir, "new")
-	if res.code == 0 {
-		t.Fatalf("expected nonzero exit, got 0; stderr=%q", res.stderr)
+	if res.code != 1 {
+		t.Fatalf("exit=%d (want 1 user error) stderr=%q", res.code, res.stderr)
 	}
 	if !strings.Contains(res.stderr, "requires at least 1 arg") {
 		t.Fatalf("unexpected stderr: %q", res.stderr)
