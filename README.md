@@ -118,8 +118,10 @@ wtmux rm feat/login
 ```
 ●  feat/auth        2 files +12 -3   ↑1
 ◌  noname                  ↳1        no upstream
-○  feat/login                        ↑0 ↓0
+○  feat/login              clean
 ```
+
+In-sync clean branches collapse to `clean`; ahead/behind counts only render when the branch has actually diverged from upstream.
 
 | Glyph | Meaning |
 |---|---|

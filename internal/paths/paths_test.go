@@ -100,3 +100,17 @@ func TestExists(t *testing.T) {
 		assert.False(t, Exists(filepath.Join(dir, "does-not-exist")))
 	})
 }
+
+func TestRealpathSafe(t *testing.T) {
+	t.Run("returns the input unchanged when EvalSymlinks fails", func(t *testing.T) {
+		missing := filepath.Join(t.TempDir(), "no-such-thing")
+		assert.Equal(t, missing, RealpathSafe(missing))
+	})
+
+	t.Run("resolves an existing path via EvalSymlinks", func(t *testing.T) {
+		dir := t.TempDir()
+		want, err := filepath.EvalSymlinks(dir)
+		assert.NoError(t, err)
+		assert.Equal(t, want, RealpathSafe(dir))
+	})
+}

@@ -43,18 +43,6 @@ func resolveSym(t *testing.T, p string) string {
 	return r
 }
 
-func TestRealpathSafe_NonExistent(t *testing.T) {
-	missing := filepath.Join(t.TempDir(), "no-such-thing")
-	got := realpathSafe(missing)
-	assert.Equal(t, missing, got)
-}
-
-func TestRealpathSafe_ExistingResolves(t *testing.T) {
-	dir := t.TempDir()
-	got := realpathSafe(dir)
-	assert.Equal(t, resolveSym(t, dir), got)
-}
-
 func TestDeterminePrimary_CwdInGroup(t *testing.T) {
 	repo := initRepo(t)
 	other := initRepo(t)

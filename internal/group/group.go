@@ -6,22 +6,12 @@ package group
 import (
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/OysterD3/wtmux/internal/config"
 	"github.com/OysterD3/wtmux/internal/git"
+	"github.com/OysterD3/wtmux/internal/paths"
 )
-
-// realpathSafe returns filepath.EvalSymlinks(p), falling back to p itself
-// on any error (most often ENOENT for a configured-but-unmounted path).
-// Mirrors TS realpathSafe.
-func realpathSafe(p string) string {
-	if r, err := filepath.EvalSymlinks(p); err == nil {
-		return r
-	}
-	return p
-}
 
 // determinePrimary returns the repo in g.Repos whose realpath matches
 // cwd's git toplevel realpath, or g.Repos[0] when cwd isn't sitting inside
@@ -33,9 +23,9 @@ func determinePrimary(cwd string, g *config.Group) string {
 	if err != nil || !ok {
 		return g.Repos[0]
 	}
-	realTop := realpathSafe(top)
+	realTop := paths.RealpathSafe(top)
 	for _, r := range g.Repos {
-		if realpathSafe(r) == realTop {
+		if paths.RealpathSafe(r) == realTop {
 			return r
 		}
 	}
@@ -122,13 +112,13 @@ func Resolve(in ResolveInput) (*Resolution, error) {
 	if !ok {
 		return &Resolution{Kind: KindOutside}, nil
 	}
-	realTop := realpathSafe(top)
+	realTop := paths.RealpathSafe(top)
 
 	var matches []*config.Group
 	for i := range in.Config.Groups {
 		g := &in.Config.Groups[i]
 		for _, r := range g.Repos {
-			if realpathSafe(r) == realTop {
+			if paths.RealpathSafe(r) == realTop {
 				matches = append(matches, g)
 				break
 			}
