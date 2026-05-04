@@ -199,6 +199,33 @@ func TestRmDryRunPresent(t *testing.T) {
 	}
 }
 
+func TestRmRefusesOnDirty(t *testing.T) {
+	dir := t.TempDir()
+	gitInitCommit(t, dir)
+	wt := filepath.Join(dir, ".worktrees", "wt-dirty")
+	mustGit(t, dir, "worktree", "add", "-b", "wt-dirty", wt, "HEAD")
+
+	// Dirty the worktree so the precheck has something to refuse on.
+	if err := os.WriteFile(filepath.Join(wt, "newfile.txt"), []byte("scratch"), 0o644); err != nil {
+		t.Fatalf("write dirty file: %v", err)
+	}
+
+	res := runWtmux(t, dir, "rm", "wt-dirty")
+	if res.code != 2 {
+		t.Fatalf("exit=%d (want 2 precondition) stderr=%q", res.code, res.stderr)
+	}
+	if !strings.Contains(res.stderr, "refusing to remove") {
+		t.Fatalf("expected refusal in stderr, got %q", res.stderr)
+	}
+	if !strings.Contains(res.stderr, "dirty:") {
+		t.Fatalf("expected dirty marker in stderr, got %q", res.stderr)
+	}
+	// Worktree must still exist — refusal is all-or-nothing.
+	if !fileExists(t, wt) {
+		t.Fatalf("worktree was removed despite refusal")
+	}
+}
+
 func TestCreateMissingName(t *testing.T) {
 	dir := t.TempDir()
 	gitInitCommit(t, dir)

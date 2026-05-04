@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -68,64 +69,92 @@ func runRm(name string, flags rmFlags) error {
 		repos = append(repos, resolved.Single)
 	}
 
+	type rmTarget struct {
+		repo, wtPath string
+	}
+
+	// Pass 1: discover every linked worktree on `name` across the group.
+	var targets []rmTarget
 	for _, repo := range repos {
 		wtPath, err := findWorktreeByBranch(repo, name)
 		if err != nil {
 			return wtmuxerrors.New(wtmuxerrors.KindInternal, "%s", err.Error())
 		}
-		if wtPath == "" {
-			continue
+		if wtPath != "" {
+			targets = append(targets, rmTarget{repo: repo, wtPath: wtPath})
 		}
+	}
 
-		if flags.dryRun {
-			wtlog.Infof("dry-run: would remove %s in %s", wtPath, repo)
-			continue
+	if len(targets) == 0 {
+		return nil
+	}
+
+	if flags.dryRun {
+		for _, t := range targets {
+			wtlog.Infof("dry-run: would remove %s in %s", t.wtPath, t.repo)
 		}
+		return nil
+	}
 
-		if !flags.force {
-			status, err := git.StatusPorcelain(wtPath)
+	// Pass 2: precheck. If any target is dirty or unpushed and --force is
+	// not set, refuse the entire operation. Removing only the clean repos
+	// would break the coordinated-worktree invariant the README promises.
+	if !flags.force {
+		var blockers []string
+		for _, t := range targets {
+			status, err := git.StatusPorcelain(t.wtPath)
 			if err != nil {
 				return wtmuxerrors.New(wtmuxerrors.KindInternal, "%s", err.Error())
 			}
 			if status != "" {
-				wtlog.Warnf("skipping %s — uncommitted changes", wtPath)
-				fmt.Fprintf(os.Stderr, "skipped %s (dirty)\n", wtPath)
+				blockers = append(blockers, fmt.Sprintf("  dirty:    %s", t.wtPath))
 				continue
 			}
-			unpushed, err := git.UnpushedCommits(wtPath)
+			unpushed, err := git.UnpushedCommits(t.wtPath)
 			if err != nil {
 				return wtmuxerrors.New(wtmuxerrors.KindInternal, "%s", err.Error())
 			}
 			if len(unpushed) > 0 {
-				wtlog.Warnf("skipping %s — %d unpushed commit(s)", wtPath, len(unpushed))
-				fmt.Fprintf(os.Stderr, "skipped %s (unpushed)\n", wtPath)
-				continue
+				blockers = append(blockers, fmt.Sprintf("  unpushed: %s (%d commit(s))", t.wtPath, len(unpushed)))
 			}
 		}
+		if len(blockers) > 0 {
+			return wtmuxerrors.New(
+				wtmuxerrors.KindPrecondition,
+				"refusing to remove %q — coordinated worktrees have uncommitted work:\n%s\ncommit/stash/push, or pass --force to remove anyway",
+				name, strings.Join(blockers, "\n"),
+			)
+		}
+	}
 
+	// Pass 3: every target passed (or --force). Remove them all. A git
+	// failure here aborts mid-loop and may leave the group partially
+	// removed, but that's a real-error condition rather than a user-misuse
+	// one — there's no clean rollback for `git worktree remove`.
+	for _, t := range targets {
 		if flags.force {
-			if err := git.WorktreeRemoveForce(repo, wtPath); err != nil {
+			if err := git.WorktreeRemoveForce(t.repo, t.wtPath); err != nil {
 				return wtmuxerrors.New(wtmuxerrors.KindInternal, "%s", err.Error())
 			}
 		} else {
-			if err := git.WorktreeRemove(repo, wtPath); err != nil {
+			if err := git.WorktreeRemove(t.repo, t.wtPath); err != nil {
 				return wtmuxerrors.New(wtmuxerrors.KindInternal, "%s", err.Error())
 			}
 		}
-		fmt.Fprintf(os.Stdout, "removed %s\n", wtPath)
+		fmt.Fprintf(os.Stdout, "removed %s\n", t.wtPath)
 
 		var delErr error
 		if flags.force {
-			delErr = git.DeleteBranchForce(repo, name)
+			delErr = git.DeleteBranchForce(t.repo, name)
 		} else {
-			delErr = git.DeleteBranch(repo, name)
+			delErr = git.DeleteBranch(t.repo, name)
 		}
 		if delErr != nil {
-			wtlog.Infof("could not delete branch %q in %s: %s", name, repo, delErr.Error())
+			wtlog.Infof("could not delete branch %q in %s: %s", name, t.repo, delErr.Error())
 		}
 
-		if err := git.WorktreePrune(repo); err != nil {
-			wtlog.Debugf("worktree prune in %s: %s", repo, err.Error())
+		if err := git.WorktreePrune(t.repo); err != nil {
+			wtlog.Debugf("worktree prune in %s: %s", t.repo, err.Error())
 		}
 	}
 

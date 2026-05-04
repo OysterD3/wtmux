@@ -92,11 +92,17 @@ func HasRef(repo, ref string) (bool, error) {
 }
 
 // StatusPorcelain returns the trimmed stdout of `git status --porcelain`.
-// Empty string means a clean working tree.
+// Empty string means a clean working tree. A non-zero git exit (e.g. corrupt
+// index, lock contention) is returned as an error rather than swallowed —
+// otherwise callers like `rm`'s dirty-guard would treat a failed status as
+// "clean" and bypass the safety check.
 func StatusPorcelain(repo string) (string, error) {
-	stdout, _, _, err := run(repo, "status", "--porcelain")
+	stdout, stderr, code, err := run(repo, "status", "--porcelain")
 	if err != nil {
 		return "", err
+	}
+	if code != 0 {
+		return "", fmt.Errorf("git status --porcelain failed in %s (exit %d): %s", repo, code, stderr)
 	}
 	return stdout, nil
 }
@@ -210,9 +216,12 @@ func UnpushedCommits(repo string) ([]string, error) {
 	if code != 0 {
 		return nil, nil
 	}
-	stdout, _, _, err := run(repo, "log", "@{u}..HEAD", "--oneline")
+	stdout, stderr, code, err := run(repo, "log", "@{u}..HEAD", "--oneline")
 	if err != nil {
 		return nil, err
+	}
+	if code != 0 {
+		return nil, fmt.Errorf("git log @{u}..HEAD failed in %s (exit %d): %s", repo, code, stderr)
 	}
 	if stdout == "" {
 		return nil, nil
