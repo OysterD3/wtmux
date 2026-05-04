@@ -16,14 +16,14 @@ import (
 func ValidateGroupName(existing []string, name string) error {
 	t := strings.TrimSpace(name)
 	if t == "" {
-		return errors.New("Name cannot be empty")
+		return errors.New("name cannot be empty")
 	}
 	if len(t) > 64 {
-		return errors.New("Name is too long (max 64 characters)")
+		return errors.New("name is too long (max 64 characters)")
 	}
 	for _, n := range existing {
 		if n == t {
-			return fmt.Errorf("A group named %q already exists", t)
+			return fmt.Errorf("a group named %q already exists", t)
 		}
 	}
 	return nil
@@ -38,7 +38,7 @@ func ValidateWorktreePattern(pattern string) error {
 		return nil
 	}
 	if !strings.Contains(t, "{name}") {
-		return errors.New("Pattern must contain {name}")
+		return errors.New("pattern must contain {name}")
 	}
 	return nil
 }

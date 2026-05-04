@@ -195,7 +195,6 @@ func (s styler) dim(t string) string     { return s.wrap("2", t) }
 func (s styler) red(t string) string     { return s.wrap("31", t) }
 func (s styler) green(t string) string   { return s.wrap("32", t) }
 func (s styler) yellow(t string) string  { return s.wrap("33", t) }
-func (s styler) blue(t string) string    { return s.wrap("34", t) }
 func (s styler) magenta(t string) string { return s.wrap("35", t) }
 func (s styler) cyan(t string) string    { return s.wrap("36", t) }
 
