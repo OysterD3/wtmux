@@ -36,6 +36,12 @@ func newRootCmd() *cobra.Command {
 	cmd.SetHelpFunc(func(c *cobra.Command, _ []string) {
 		helpToStdout(rootHelp)
 	})
+	// Tag flag-parsing failures (unknown flag, missing flag value, etc.)
+	// as KindUser so they exit 1 instead of falling through to ExitCodeFor's
+	// default of 3. cobra propagates this hook to subcommands.
+	cmd.SetFlagErrorFunc(func(c *cobra.Command, err error) error {
+		return wtmuxerrors.Wrapf(wtmuxerrors.KindUser, err, "%s", err.Error())
+	})
 
 	cmd.PersistentFlags().StringVarP(&pf.configPath, "config", "c", "", "Override config discovery")
 	cmd.PersistentFlags().StringVarP(&pf.group, "group", "g", "", "Override auto-detected group")

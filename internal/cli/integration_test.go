@@ -172,6 +172,25 @@ func TestRmMissingNameArg(t *testing.T) {
 	}
 }
 
+func TestUnknownFlagExitCode(t *testing.T) {
+	for _, args := range [][]string{
+		{"--bogus"},
+		{"ls", "--bogus"},
+		{"new", "--bogus", "wt-x"},
+		{"rm", "--bogus", "wt-x"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			res := runWtmux(t, t.TempDir(), args...)
+			if res.code != 1 {
+				t.Fatalf("exit=%d (want 1 user error) stderr=%q", res.code, res.stderr)
+			}
+			if !strings.Contains(res.stderr, "unknown flag") {
+				t.Fatalf("expected 'unknown flag' on stderr, got %q", res.stderr)
+			}
+		})
+	}
+}
+
 func TestRmAbsentNameReportsToStderr(t *testing.T) {
 	dir := t.TempDir()
 	gitInitCommit(t, dir)
