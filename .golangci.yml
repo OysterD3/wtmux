@@ -27,6 +27,4 @@ linters:
   exclusions:
     paths:
       - dist
-      - node_modules
-      - src
-      - tests
+      - bin

@@ -1,8 +1,5 @@
-node_modules/
-dist/
 .idea/
-pnpm-debug.log*
 .worktrees/
 docs/
-/wtmux
+dist/
 /bin/
