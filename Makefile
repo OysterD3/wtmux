@@ -7,7 +7,11 @@
 VERSION ?= $(shell git describe --tags --exact-match 2>/dev/null)
 
 PKG     := github.com/OysterD3/wtmux/internal/cli
-LDFLAGS := $(if $(VERSION),-ldflags=-X $(PKG).version=$(VERSION))
+# Quote the -ldflags value so the embedded space (between -X and the
+# symbol=value) survives shell word-splitting in the `go build` recipe.
+# Unquoted, "-ldflags=-X foo=bar" splits into "-ldflags=-X" + "foo=bar"
+# and go build treats the second token as a package path.
+LDFLAGS := $(if $(VERSION),-ldflags="-X $(PKG).version=$(VERSION)")
 
 BIN_DIR    := bin
 BIN_NAME   := wtmux
