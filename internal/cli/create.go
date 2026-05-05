@@ -153,7 +153,7 @@ func runCreate(name string, flags createFlags, extra []string) error {
 	type placed struct {
 		repo   string
 		wtPath string
-		linked []string
+		items  []string // every item passed to Replicate; symlinks.Remove skips non-symlinks safely
 	}
 
 	expandedByRepo := make(map[string][]string, len(plan.Repos))
@@ -169,7 +169,7 @@ func runCreate(name string, flags createFlags, extra []string) error {
 	rollback := func() {
 		for i := len(placedOK) - 1; i >= 0; i-- {
 			p := placedOK[i]
-			_ = symlinks.Remove(p.wtPath, p.linked)
+			_ = symlinks.Remove(p.wtPath, p.items)
 			_ = git.WorktreeRemoveForce(p.repo, p.wtPath)
 		}
 	}
@@ -186,23 +186,24 @@ func runCreate(name string, flags createFlags, extra []string) error {
 			return wtmuxerrors.New(wtmuxerrors.KindInternal, "%s", err.Error())
 		}
 
+		// Record the freshly-created worktree before any further mutation
+		// can fail. Without this, a Replicate failure below would leave
+		// this repo's worktree orphaned on disk because rollback only
+		// walks placedOK. symlinks.Replicate's contract on error is "the
+		// returned slice is nil; pass the full Items slice to Remove",
+		// and Remove safely skips non-symlinks — so capturing items up
+		// front works for both partial-failure and clean-success cases.
 		items := expandedByRepo[rp.Repo]
-		results, err := symlinks.Replicate(symlinks.ReplicateInputs{
+		placedOK = append(placedOK, placed{repo: rp.Repo, wtPath: rp.WtPath, items: items})
+
+		if _, err := symlinks.Replicate(symlinks.ReplicateInputs{
 			Repo:  rp.Repo,
 			WT:    rp.WtPath,
 			Items: items,
-		})
-		if err != nil {
+		}); err != nil {
 			rollback()
 			return wtmuxerrors.New(wtmuxerrors.KindInternal, "%s", err.Error())
 		}
-		var linked []string
-		for _, r := range results {
-			if r.Action == symlinks.ActionLinked {
-				linked = append(linked, r.Item)
-			}
-		}
-		placedOK = append(placedOK, placed{repo: rp.Repo, wtPath: rp.WtPath, linked: linked})
 	}
 
 	if flags.noLaunch {
