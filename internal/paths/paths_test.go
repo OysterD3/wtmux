@@ -32,18 +32,6 @@ func TestExpandTilde(t *testing.T) {
 	})
 }
 
-func TestIsAbsolute(t *testing.T) {
-	t.Run("returns true for POSIX absolute paths", func(t *testing.T) {
-		assert.True(t, IsAbsolute("/a/b"))
-	})
-
-	t.Run("returns false for relative and tilde paths", func(t *testing.T) {
-		assert.False(t, IsAbsolute("a/b"))
-		assert.False(t, IsAbsolute("./a"))
-		assert.False(t, IsAbsolute("~/a"))
-	})
-}
-
 func TestFlattenWorktreeName(t *testing.T) {
 	t.Run("flattens forward slashes to dashes", func(t *testing.T) {
 		assert.Equal(t, "feat-login", FlattenWorktreeName("feat/login"))

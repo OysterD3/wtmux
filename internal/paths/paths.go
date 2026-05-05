@@ -27,12 +27,6 @@ func ExpandTilde(p string) string {
 	return p
 }
 
-// IsAbsolute reports whether p is an absolute path. Tilde-prefixed paths are
-// not considered absolute (they must be expanded first).
-func IsAbsolute(p string) bool {
-	return filepath.IsAbs(p)
-}
-
 // FlattenWorktreeName replaces "/" with "-" so a branch name like "feat/login"
 // becomes a single-segment worktree directory name "feat-login".
 func FlattenWorktreeName(name string) string {
