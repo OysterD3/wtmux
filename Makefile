@@ -40,6 +40,16 @@ test-race:
 vet:
 	go vet ./...
 
+# Run golangci-lint with the same config CI uses. Errors out if the binary
+# isn't on PATH rather than silently no-opping (the previous behavior of
+# `make lint` was a phony target with no recipe — exit 0, nothing run).
+lint:
+	@command -v golangci-lint >/dev/null || { \
+		echo "golangci-lint not found on PATH — install: https://golangci-lint.run/"; \
+		exit 1; \
+	}
+	golangci-lint run --timeout=5m ./...
+
 clean:
 	rm -rf $(BIN_DIR) dist
 
