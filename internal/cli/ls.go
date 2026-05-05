@@ -268,8 +268,11 @@ func changes(s lsRepoStatus, sty styler) string {
 	return strings.Join(parts, " ")
 }
 
-// sync renders ahead/behind arrows, returning "" when nothing notable.
-func sync(s lsRepoStatus, sty styler) string {
+// syncCol renders the sync column (ahead/behind arrows), returning "" when
+// nothing notable. Named with the `Col` suffix so it doesn't shadow the
+// stdlib `sync` package — adding a sync.Mutex/WaitGroup to this file
+// later would otherwise produce a confusing "not a package" error.
+func syncCol(s lsRepoStatus, sty styler) string {
 	if !s.present {
 		return ""
 	}
@@ -305,7 +308,7 @@ func renderTable(w *os.File, rows []lsRow, multiRepo, useColor bool) {
 					continue
 				}
 				ch := changes(s, sty)
-				sy := sync(s, sty)
+				sy := syncCol(s, sty)
 				cols := []string{ch, sy}
 				body := strings.TrimSpace(joinNonEmpty(cols, "  "))
 				if body == "" {
@@ -334,7 +337,7 @@ func renderTable(w *os.File, rows []lsRow, multiRepo, useColor bool) {
 			c.ch = sty.dim("—")
 		} else {
 			c.ch = changes(s, sty)
-			c.sy = sync(s, sty)
+			c.sy = syncCol(s, sty)
 			if c.ch == "" && c.sy == "" {
 				c.ch = sty.dim("clean")
 			}
