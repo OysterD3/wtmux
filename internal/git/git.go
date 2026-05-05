@@ -238,14 +238,18 @@ func UnpushedCommits(repo string) ([]string, error) {
 
 // ListWorktrees returns every worktree (main + linked) attached to repo, by
 // shelling out to `git worktree list --porcelain` and parsing the result.
-// Returns empty (nil) on git failure (matches TS).
+// A non-zero git exit is surfaced as an error rather than swallowed —
+// callers in rm/preflight rely on the result to enforce safety invariants
+// (e.g. "no worktree exists on this branch" for create, "find worktree to
+// remove" for rm); silently treating a transient failure as "empty" would
+// let the operation proceed past a check it shouldn't.
 func ListWorktrees(repo string) ([]WorktreeEntry, error) {
-	stdout, _, code, err := run(repo, "worktree", "list", "--porcelain")
+	stdout, stderr, code, err := run(repo, "worktree", "list", "--porcelain")
 	if err != nil {
 		return nil, err
 	}
 	if code != 0 {
-		return nil, nil
+		return nil, fmt.Errorf("git worktree list failed in %s (exit %d): %s", repo, code, stderr)
 	}
 	return parseWorktreePorcelain(stdout), nil
 }
