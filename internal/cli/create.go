@@ -3,6 +3,7 @@ package cli
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -109,17 +110,43 @@ func runCreate(name string, flags createFlags, extra []string) error {
 		return wtmuxerrors.New(wtmuxerrors.KindUser, "%s", err.Error())
 	}
 
-	// --base ignored when branch already exists in any repo
+	// Probe each repo once: BranchExists drives both the --base warning
+	// below and the WorktreeAddExisting/AddNew dispatch in the placement
+	// loop. Computing it twice (the original layout) was a wasted git call
+	// and made it harder to keep the two decisions in sync.
+	branchExists := make(map[string]bool, len(plan.Repos))
+	for _, rp := range plan.Repos {
+		e, err := git.BranchExists(rp.Repo, name)
+		if err != nil {
+			return wtmuxerrors.New(wtmuxerrors.KindInternal, "%s", err.Error())
+		}
+		branchExists[rp.Repo] = e
+	}
+
+	// --base only applies to repos where the branch is being newly created.
+	// In a mixed-state group some repos reuse the existing branch (HEAD)
+	// while others branch off --base, so the warning has to name names —
+	// the previous "ignored" blanket was misleading.
 	if flags.base != "" {
+		var reused, fresh []string
 		for _, rp := range plan.Repos {
-			exists, err := git.BranchExists(rp.Repo, name)
-			if err != nil {
-				return wtmuxerrors.New(wtmuxerrors.KindInternal, "%s", err.Error())
+			label := filepath.Base(rp.Repo)
+			if branchExists[rp.Repo] {
+				reused = append(reused, label)
+			} else {
+				fresh = append(fresh, label)
 			}
-			if exists {
-				wtlog.Warnf(`--base %q ignored: branch %q already exists`, flags.base, name)
-				break
-			}
+		}
+		switch {
+		case len(reused) == 0:
+			// branch is being created in every repo — --base applies cleanly.
+		case len(fresh) == 0:
+			wtlog.Warnf(`--base %q ignored: branch %q already exists in every repo`, flags.base, name)
+		default:
+			wtlog.Warnf(
+				`--base %q used in %s; ignored in %s where branch %q already exists`,
+				flags.base, strings.Join(fresh, ", "), strings.Join(reused, ", "), name,
+			)
 		}
 	}
 
@@ -148,12 +175,8 @@ func runCreate(name string, flags createFlags, extra []string) error {
 	}
 
 	for _, rp := range plan.Repos {
-		exists, err := git.BranchExists(rp.Repo, name)
-		if err != nil {
-			rollback()
-			return wtmuxerrors.New(wtmuxerrors.KindInternal, "%s", err.Error())
-		}
-		if exists {
+		var err error
+		if branchExists[rp.Repo] {
 			err = git.WorktreeAddExisting(rp.Repo, rp.WtPath, name)
 		} else {
 			err = git.WorktreeAddNew(rp.Repo, rp.WtPath, name, plan.BaseBranch)
