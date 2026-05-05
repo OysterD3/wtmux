@@ -1,0 +1,30 @@
+version: "2"
+
+run:
+  go: "1.26"
+  timeout: 5m
+
+linters:
+  default: standard
+  enable:
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+  settings:
+    errcheck:
+      # Errors from fmt.Fprint* and a few stdio/file helpers are intentionally
+      # discarded — they target stdout/stderr for human-readable output and
+      # have no recovery path. Keep the list narrow so genuine unchecked
+      # errors elsewhere are still reported.
+      exclude-functions:
+        - fmt.Fprintf
+        - fmt.Fprintln
+        - fmt.Fprint
+        - os.RemoveAll
+        - (*os.File).WriteString
+  exclusions:
+    paths:
+      - dist
+      - bin

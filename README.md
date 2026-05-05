@@ -32,15 +32,43 @@ No AI agent has a hook or config to rewrite attached directory paths mid-session
 
 ## Install
 
+**Homebrew** (macOS / Linux):
+
 ```bash
-pnpm add -g wtmux
-# or
-npm install -g wtmux
-# or
-yarn global add wtmux
+brew install OysterD3/wtmux/wtmux
 ```
 
-Requirements: **Node.js 20+** and **git**.
+Or two-step, so daily upgrades are just `brew upgrade wtmux`:
+
+```bash
+brew tap OysterD3/wtmux
+brew install wtmux
+```
+
+<details>
+<summary>Other install methods</summary>
+
+**`go install`** (requires Go 1.26+):
+
+```bash
+go install github.com/OysterD3/wtmux/cmd/wtmux@latest
+```
+
+**Prebuilt binaries:** download the tarball for your platform from [releases](https://github.com/OysterD3/wtmux/releases), extract, and put `wtmux` somewhere on your PATH.
+
+**Build from source:**
+
+```bash
+git clone https://github.com/OysterD3/wtmux.git
+cd wtmux
+make install
+```
+
+</details>
+
+> **Note:** versions ≤ 0.4.2 were distributed via npm. The npm package is deprecated; new releases ship as a single statically-linked Go binary.
+
+Requirements: **git** (everything else is statically linked into the binary).
 
 ## Quick start
 
@@ -63,7 +91,7 @@ Add a config at `~/.config/wtmux/config.json` (or `.wtmux.json` in your monorepo
 Then, from inside either repo:
 
 ```bash
-wtmux feat/login
+wtmux new feat/login
 ```
 
 That creates `~/code/myapp-api/.worktrees/feat-login` and `~/code/myapp-web/.worktrees/feat-login`, both checked out on `feat/login` branched from the primary's current branch, both with `node_modules` and `.env` symlinked from their origins — and launches your agent (Claude Code by default) with the sibling attached.
@@ -80,24 +108,65 @@ wtmux rm feat/login
 
 | Command | Purpose |
 |---|---|
-| `wtmux <name>` | Create coordinated worktrees on branch `<name>` and launch the agent |
+| `wtmux new <name>` | Create coordinated worktrees on branch `<name>` and launch the agent |
 | `wtmux rm <name>` | Remove coordinated worktrees (refuses on dirty / unpushed; `--force` overrides) |
 | `wtmux ls` | List coordinated worktrees across the current group, with per-repo state |
 | `wtmux config` | Interactively edit the wtmux config (create/edit/delete groups) |
 
+### `wtmux ls` output
+
+```
+●  feat/auth        2 files +12 -3   ↑1
+◌  noname                  ↳1        no upstream
+○  feat/login              clean
+```
+
+In-sync clean branches collapse to `clean`; ahead/behind counts only render when the branch has actually diverged from upstream.
+
+| Glyph | Meaning |
+|---|---|
+| `●` | Tracked changes (modified/staged) |
+| `◌` | Untracked files only |
+| `○` | Clean |
+| `+N -N` | Insertions / deletions vs HEAD |
+| `↳N` | Untracked file count |
+| `↑N` `↓N` | Commits ahead of / behind upstream |
+
+Colors are auto-disabled when stdout isn't a terminal.
+
 ## Flags
+
+### `wtmux new`
+
+| Flag | Short | Purpose |
+|---|---|---|
+| `--base <branch>` | `-b` | Override the base branch |
+| `--dry-run` | `-n` | Print the plan without mutating |
+| `--no-launch` | — | Skip launching the agent at the end |
+
+Trailing args after `--` are passed through to the launched agent:
+
+```bash
+wtmux new feat/auth -- --print
+# expands to: claude --add-dir <sibling> --print
+```
+
+### `wtmux rm`
+
+| Flag | Short | Purpose |
+|---|---|---|
+| `--dry-run` | `-n` | Print what would be removed |
+| `--force` | `-f` | Skip dirty / unpushed guards |
+
+### Global
 
 | Flag | Short | Purpose |
 |---|---|---|
 | `--config <path>` | `-c` | Override config discovery |
 | `--group <name>` | `-g` | Override auto-detected group |
-| `--base <branch>` | `-b` | Override the base branch (create only) |
-| `--dry-run` | `-n` | Print the plan without mutating |
-| `--no-launch` | — | Skip launching the agent at the end of `create` |
-| `--force` | `-f` | `rm` only: skip dirty/unpushed guards |
 | `--verbose` | `-v` | Extra logging |
 | `--version` | — | Print version |
-| `--help` | — | Print help |
+| `--help` | `-h` | Print help (works on every subcommand) |
 
 ## Configuration
 
@@ -203,7 +272,7 @@ Patterns resolve relative to each repo's root. Dotfiles are included by default,
 
 3. **Can I use it with only one repo?**
 
-   Yes. Run `wtmux <name>` from inside any git repo that isn't in a configured group — you get single-repo worktree creation + symlinks + agent launch, no siblings.
+   Yes. Run `wtmux new <name>` from inside any git repo that isn't in a configured group — you get single-repo worktree creation + symlinks + agent launch, no siblings.
 
 4. **What happens if the worktrees already exist?**
 
@@ -219,15 +288,15 @@ Patterns resolve relative to each repo's root. Dotfiles are included by default,
 
 7. **Does it support Windows?**
 
-   Not yet. macOS and Linux only. PRs welcome.
+   Releases ship darwin and linux binaries (amd64 + arm64). The Go source builds on Windows — `go build ./cmd/wtmux` should work — but it isn't part of the release matrix yet. PRs welcome.
 
 8. **Does it send anything over the network?**
 
    No. `wtmux` is a local tool — no telemetry, no update checks, no API calls.
 
-9. **What happens if I run `wtmux` with no name?**
+9. **What happened to random-name generation?**
 
-   It generates a random, memorable name like `wt/brave-penguin` and creates coordinated worktrees on that branch. The generated name is printed to stderr so you can find it later via `wtmux rm wt/brave-penguin`.
+   Earlier (TS) versions of `wtmux` generated a name like `wt/brave-penguin` if you didn't pass one. The Go rewrite requires an explicit name — it makes `wtmux ls` and `wtmux rm` later much less guesswork.
 
 ## License
 

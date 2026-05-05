@@ -1,0 +1,12 @@
+{
+  "$schema": "https://example.com/wtmux.json",
+  "symlinkDirectories": ["node_modules", ".env"],
+  "worktreePathPattern": ".worktrees/{name}",
+  "launchCommand": ["claude"],
+  "groups": [
+    {
+      "name": "myteam",
+      "repos": ["/repo/a", "/repo/b"]
+    }
+  ]
+}
